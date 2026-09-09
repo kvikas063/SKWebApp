@@ -1,0 +1,540 @@
+// Prisma schema for HRMS Payroll & Leave Management Suite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum EmployeeType {
+  REGULAR
+  PART_TIME
+  PROBATION
+  CONTRACTUAL
+}
+
+enum TaxRegime {
+  OLD
+  NEW
+}
+
+enum SalaryComponentType {
+  EARNING
+  DEDUCTION
+}
+
+enum LeaveType {
+  CASUAL
+  EARNED
+  SICK
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveDayType {
+  FULL
+  HALF
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  HOLIDAY
+  LOP
+}
+
+enum PayRunStatus {
+  DRAFT
+  REVIEWING
+  LOCKED
+  FINALIZED
+  CANCELLED
+}
+
+enum DocumentType {
+  ID_PROOF
+  PAN
+  BANK
+  OFFER_LETTER
+  OTHER
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+  BOUNCED
+}
+
+enum EmailTemplateKey {
+  PAYSLIP_READY
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  LEAVE_SUBMITTED
+  PASSWORD_RESET
+  MONTHLY_PAYROLL_SUMMARY
+  WELCOME
+  PUNCH_REMINDER
+  PROFILE_APPROVED
+  PROFILE_REJECTED
+  ANNOUNCEMENT
+}
+
+// ─── Company ─────────────────────────────────────────────────────────────────
+
+model Company {
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  pan             String?
+  tan             String?
+  pfNumber        String?
+  esiNumber       String?
+  timezone        String   @default("Asia/Kolkata")
+  financialYearStart Int   @default(4) // April = 4
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employees       Employee[]
+  leavePolicies   LeavePolicy[]
+  holidays        Holiday[]
+  statutoryConfig StatutoryConfig?
+  payRuns         PayRun[]
+  auditLogs       AuditLog[]
+  announcements   Announcement[]
+  emailLogs       EmailLog[]
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          UserRole  @default(EMPLOYEE)
+  isActive      Boolean   @default(true)
+  phone         String?
+  dateOfBirth   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  employee      Employee?
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[] @relation("AuditActor")
+  payRunsOpened PayRun[]   @relation("PayRunOpenedBy")
+  payRunsFinalized PayRun[] @relation("PayRunFinalizedBy")
+  announcements    Announcement[]
+  notifications    Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Employee ───────────────────────────────────────────────────────────────
+
+model Employee {
+  id              String       @id @default(cuid())
+  companyId       String
+  userId          String?      @unique
+  employeeCode    String
+  firstName       String
+  lastName        String
+  email           String
+  phone           String?
+  dateOfBirth     DateTime?
+  dateOfJoining   DateTime
+  dateOfLeaving   DateTime?
+  employeeType    EmployeeType @default(REGULAR)
+  taxRegime       TaxRegime    @default(NEW)
+  designation     String?
+  department      String?
+  managerId       String?
+  profilePhoto    String?
+  address         String?
+
+  // Bank details
+  bankName        String?
+  bankAccountNo   String?
+  bankIfsc        String?
+
+  // Statutory
+  pan             String?
+  aadhaar         String?
+  uan             String?  // PF UAN
+  esiNumber       String?
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id])
+  manager         Employee? @relation("EmployeeManager", fields: [managerId], references: [id])
+  directReports   Employee[] @relation("EmployeeManager")
+
+  salaryComponents SalaryComponent[]
+  leaveBalances    LeaveBalance[]
+  leaveRequests    LeaveRequest[]
+  attendances      Attendance[]
+  paySlips         PaySlip[]
+  documents        EmployeeDocument[]
+
+  @@unique([companyId, employeeCode])
+  @@index([companyId])
+}
+
+// ─── Salary ───────────────────────────────────────────────────────────────────
+
+model SalaryComponent {
+  id          String              @id @default(cuid())
+  employeeId  String
+  name        String
+  type        SalaryComponentType
+  amountPaise Int                 // stored in paise (1 INR = 100 paise)
+  sortOrder   Int                 @default(0)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+// ─── Leave ────────────────────────────────────────────────────────────────────
+
+model LeavePolicy {
+  id                  String       @id @default(cuid())
+  companyId           String
+  employeeType        EmployeeType
+  leaveType           LeaveType
+  yearlyEntitlement   Float        // days per year
+  allowCarryover      Boolean      @default(false)
+  maxCarryoverDays    Float        @default(0)
+  minServiceMonths    Int          @default(0) // months before carryover allowed
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  company             Company      @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, employeeType, leaveType])
+}
+
+model LeaveBalance {
+  id              String    @id @default(cuid())
+  employeeId      String
+  leaveType       LeaveType
+  year            Int
+  entitled        Float     @default(0)
+  carriedOver     Float     @default(0)
+  used            Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveType, year])
+}
+
+model LeaveRequest {
+  id              String             @id @default(cuid())
+  employeeId      String
+  leaveType       LeaveType
+  startDate       DateTime
+  endDate         DateTime
+  dayType         LeaveDayType       @default(FULL)
+  days            Float
+  reason          String?
+  status          LeaveRequestStatus @default(PENDING)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNote      String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+model Attendance {
+  id              String           @id @default(cuid())
+  employeeId      String
+  date            DateTime         @db.Date
+  punchIn         DateTime?
+  punchOut        DateTime?
+  workedMinutes   Int?
+  status          AttendanceStatus @default(ABSENT)
+  notes           String?
+  editedBy        String?
+  editedAt        DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  employee        Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  companyId   String
+  date        DateTime @db.Date
+  name        String
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, date])
+}
+
+// ─── Payroll ──────────────────────────────────────────────────────────────────
+
+model PayRun {
+  id              String       @id @default(cuid())
+  companyId       String
+  year            Int
+  month           Int          // 1-12
+  status          PayRunStatus @default(DRAFT)
+  totalGrossPaise Int          @default(0)
+  totalNetPaise   Int          @default(0)
+  totalDeductionsPaise Int     @default(0)
+  openedById      String?
+  openedAt        DateTime?
+  finalizedById   String?
+  finalizedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  company         Company      @relation(fields: [companyId], references: [id])
+  openedBy        User?        @relation("PayRunOpenedBy", fields: [openedById], references: [id])
+  finalizedBy     User?        @relation("PayRunFinalizedBy", fields: [finalizedById], references: [id])
+  paySlips        PaySlip[]
+
+  @@unique([companyId, year, month])
+}
+
+model PaySlip {
+  id                  String   @id @default(cuid())
+  payRunId            String
+  employeeId          String
+  // Snapshot fields (immutable after finalize)
+  grossPaise          Int
+  netPaise            Int
+  totalDeductionsPaise Int
+  daysPresent         Float    @default(0)
+  daysAbsent          Float    @default(0)
+  lopDays             Float    @default(0)
+  paidDays            Float    @default(0)
+  // JSON snapshots
+  earningsJson        Json     // [{name, amountPaise}]
+  deductionsJson      Json     // [{name, amountPaise}]
+  statutoryJson       Json?    // {pf, esi, pt, tds}
+  createdAt           DateTime @default(now())
+
+  payRun              PayRun   @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+  employee            Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([payRunId, employeeId])
+}
+
+// ─── Statutory Config ─────────────────────────────────────────────────────────
+
+model StatutoryConfig {
+  id                    String  @id @default(cuid())
+  companyId             String  @unique
+  // PF
+  pfEmployeeRate        Float   @default(12)    // %
+  pfEmployerRate        Float   @default(12)    // %
+  pfWageCeilingPaise    Int     @default(1500000) // ₹15,000
+  // ESI
+  esiWageThresholdPaise Int     @default(2100000) // ₹21,000
+  esiEmployeeRate       Float   @default(0.75)    // %
+  esiEmployerRate       Float   @default(3.25)    // %
+  // Professional Tax slabs (JSON array)
+  ptSlabsJson           Json    @default("[]")
+  // TDS
+  oldRegimeStdDeductionPaise Int @default(5000000) // ₹50,000
+  newRegimeStdDeductionPaise Int @default(7500000) // ₹75,000
+  tdsSlabsOldJson       Json    @default("[]")
+  tdsSlabsNewJson       Json    @default("[]")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  company               Company @relation(fields: [companyId], references: [id])
+}
+
+// ─── Documents ────────────────────────────────────────────────────────────────
+
+model EmployeeDocument {
+  id          String       @id @default(cuid())
+  employeeId  String
+  type        DocumentType
+  fileName    String
+  filePath    String
+  mimeType    String?
+  fileSize    Int?
+  uploadedAt  DateTime     @default(now())
+
+  employee    Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+// ─── Audit ────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String?
+  actorId     String?
+  action      String
+  entityType  String
+  entityId    String?
+  beforeJson  Json?
+  afterJson   Json?
+  createdAt   DateTime @default(now())
+
+  company     Company? @relation(fields: [companyId], references: [id])
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  companyId String?
+  type      NotificationType
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([companyId, createdAt])
+}
+
+enum NotificationType {
+  PAYSLIP
+  LEAVE
+  ANNOUNCEMENT
+  PAYRUN
+}
+
+// ─── Announcements ───────────────────────────────────────────────────────────
+
+model Announcement {
+  id          String   @id @default(cuid())
+  companyId   String
+  title       String
+  body        String
+  audience    String   @default("ALL")  // ALL, ADMIN, EMPLOYEES
+  pinned      Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  expiresAt   DateTime?
+  authorId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id])
+  author      User?    @relation(fields: [authorId], references: [id])
+
+  @@index([companyId, publishedAt])
+}
+
+// ─── Email Log ───────────────────────────────────────────────────────────────
+
+model EmailLog {
+  id          String      @id @default(cuid())
+  companyId   String?
+  to          String
+  subject     String
+  template    EmailTemplateKey
+  status      EmailStatus @default(QUEUED)
+  providerId  String?     // Resend message ID
+  error       String?
+  sentAt      DateTime?
+  createdAt   DateTime    @default(now())
+
+  company     Company?    @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@index([status])
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  key       EmailTemplateKey @unique
+  name      String
+  subject   String
+  bodyHtml  String
+  variables String   @default("[]") // JSON array of variable names
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
