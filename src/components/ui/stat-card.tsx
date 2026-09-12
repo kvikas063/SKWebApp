@@ -10,7 +10,7 @@ interface StatCardProps {
   description?: string;
   trend?: { value: string; positive?: boolean };
   className?: string;
-  accent?: string; // tailwind gradient classes for icon bg
+  accent?: string;
   href?: string;
 }
 
@@ -36,7 +36,7 @@ export function StatCard({
           {icon && (
             <div
               className={cn(
-                "flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm",
+                "flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg",
                 accent
               )}
             >
@@ -79,7 +79,7 @@ export function StatCard({
   );
 
   const baseClass = cn(
-    "group relative block overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-700",
+    "group relative block overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all duration-200 ease-out hover:-translate-y-px hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-700",
     className
   );
 

@@ -82,9 +82,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   background:
@@ -97,13 +95,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  border-color: var(--border);
-}
+* { border-color: var(--border); }
 
-::selection {
-  background: color-mix(in oklab, var(--primary) 30%, transparent);
-}
+::selection { background: color-mix(in oklab, var(--primary) 30%, transparent); }
 
 @layer components {
   .glass {
@@ -111,97 +105,77 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  .glass-strong {
+    background: color-mix(in oklab, var(--card) 90%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
 }
 
 @keyframes sidebar-menu-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.96);
-    filter: blur(2px);
-  }
-  60% {
-    filter: blur(0);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
+  0% { opacity: 0; transform: translateY(-6px) scale(0.96); filter: blur(2px); }
+  60% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
 @keyframes sidebar-item-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  0% { opacity: 0; transform: translateX(-6px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes progress-fill {
+  0% { width: 0%; }
+  100% { width: var(--pct); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @layer utilities {
-  .animate-sidebar-menu {
-    animation: sidebar-menu-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .animate-sidebar-item {
-    animation: sidebar-item-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
+  .animate-sidebar-menu { animation: sidebar-menu-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-sidebar-item { animation: sidebar-item-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-fade-in { animation: fade-in 300ms ease-out both; }
+  .animate-pop-in { animation: pop-in 250ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .progress-bar { animation: progress-fill 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .float-orb { animation: float-orb 18s ease-in-out infinite; }
+  .shimmer { animation: shimmer 3s linear infinite; }
 }
 
 @media print {
-  html, body {
-    background: white !important;
-    color: #0f172a !important;
-  }
-  /* Hide app chrome by default during print */
-  aside,
-  header,
-  nav,
-  footer,
-  [data-radix-dialog-overlay] {
-    display: none !important;
-  }
-  /* Make the print summary dialog fully expand to fill the print page */
+  html, body { background: white !important; color: #0f172a !important; }
+  aside, header, nav, footer, [data-radix-dialog-overlay] { display: none !important; }
   [data-radix-portal] [role="dialog"] {
-    position: static !important;
-    max-width: none !important;
-    width: 100% !important;
-    height: auto !important;
-    transform: none !important;
-    box-shadow: none !important;
-    border: 0 !important;
-    background: white !important;
-    inset: auto !important;
+    position: static !important; max-width: none !important; width: 100% !important;
+    height: auto !important; transform: none !important; box-shadow: none !important;
+    border: 0 !important; background: white !important; inset: auto !important;
   }
-  .print-area {
-    page-break-inside: auto;
-  }
-  .print-area > * {
-    page-break-inside: avoid;
-  }
-  /* Pin the system-generated footer to the very end of the print */
+  .print-area { page-break-inside: auto; }
+  .print-area > * { page-break-inside: avoid; }
   .print-footer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 8px 12mm;
-    border-top: 1px solid #cbd5e1;
-    color: #64748b;
-    font-size: 10px;
-    background: white;
+    position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 12mm;
+    border-top: 1px solid #cbd5e1; color: #64748b; font-size: 10px; background: white;
   }
-  @page {
-    size: A4;
-    margin: 12mm;
-  }
+  @page { size: A4; margin: 12mm; }
 }
 
-/* Upcoming divider label — visible in both light and dark modes */
-.upcoming-label {
-  color: #312e81;
-}
-.dark .upcoming-label {
-  color: #c7d2fe;
-}
+.upcoming-label { color: #312e81; }
+.dark .upcoming-label { color: #c7d2fe; }

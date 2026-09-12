@@ -128,7 +128,7 @@ export function NotificationBell({
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
         className={cn(
-          "relative flex h-9 w-9 items-center justify-center rounded-lg border border-primary/30 bg-primary/15 text-primary shadow-md shadow-indigo-500/30 transition-all hover:bg-primary/25 hover:text-primary hover:shadow-lg hover:shadow-indigo-500/40",
+          "relative flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/15 text-primary shadow-md shadow-indigo-500/30 transition-all duration-200 ease-out hover:bg-primary/25 hover:text-primary hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-px",
           open && "bg-primary/25 text-primary shadow-lg shadow-indigo-500/40"
         )}
       >
@@ -146,14 +146,14 @@ export function NotificationBell({
       {mounted && open && anchorRect && createPortal(
         <div
           data-notification-panel
-          className="fixed z-[1000] w-[360px] origin-top-right overflow-hidden rounded-xl border bg-card text-card-foreground shadow-2xl shadow-indigo-500/30 ring-1 ring-indigo-500/30 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+          className="fixed z-[1000] w-[380px] origin-top-right overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-2xl shadow-indigo-500/30 ring-1 ring-indigo-500/30 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
           style={{ top: anchorRect.top, right: anchorRect.right }}
           role="menu"
         >
           <div className="flex items-center justify-between gap-2 border-b bg-gradient-to-r from-indigo-50 via-violet-50/40 to-pink-50/40 px-4 py-3 dark:from-indigo-950/40 dark:via-violet-950/30 dark:to-pink-950/30">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
-                <Sparkles className="h-3.5 w-3.5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                <Sparkles className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-bold">Notifications</p>
@@ -167,7 +167,7 @@ export function NotificationBell({
                 type="button"
                 onClick={handleMarkAll}
                 style={{ color: "#0f172a" }}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold transition-colors hover:bg-slate-500/10 dark:[color:#f1f5f9]"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold transition-colors hover:bg-slate-500/10 dark:[color:#f1f5f9]"
               >
                 <CheckCheck className="h-3 w-3" />
                 Mark all
@@ -175,11 +175,11 @@ export function NotificationBell({
             )}
           </div>
 
-          <div className="max-h-[420px] overflow-y-auto">
+          <div className="max-h-[440px] overflow-y-auto">
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <BellOff className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                  <BellOff className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-semibold">No notifications yet</p>
                 <p className="text-xs text-muted-foreground">Payslip, leave, and announcement alerts will appear here.</p>
@@ -196,12 +196,12 @@ export function NotificationBell({
                         type="button"
                         onClick={() => handleMarkRead(n.id, n.href)}
                         className={cn(
-                          "group/item flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted"
+                          "group/item flex w-full items-start gap-3 px-3 py-3 text-left transition-colors duration-200 ease-out hover:bg-muted"
                         )}
                       >
                         <div
                           className={cn(
-                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ring-1 ring-inset",
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-inset",
                             meta.bg,
                             meta.ring
                           )}
@@ -215,7 +215,7 @@ export function NotificationBell({
                             </p>
                             {isUnread && (
                               <span
-                                className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                                className="mt-1 h-2 w-2 shrink-0 rounded-full"
                                 style={{ backgroundColor: "#7c3aed" }}
                                 aria-label="Unread"
                               />

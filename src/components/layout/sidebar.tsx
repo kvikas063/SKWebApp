@@ -118,15 +118,15 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
   const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]" style={{ borderColor: "var(--sidebar-border)" }}>
+    <aside className="flex h-full w-72 shrink-0 flex-col bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]" style={{ borderColor: "var(--sidebar-border)" }}>
       <Link
         href="/dashboard"
-        className="relative flex h-20 items-center gap-3 overflow-hidden border-b bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 px-5 text-white"
+        className="relative flex h-24 items-center gap-3 overflow-hidden border-b bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 px-5 text-white"
         style={{ borderColor: "var(--sidebar-border)" }}
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 shadow-lg ring-1 ring-white/20 backdrop-blur-sm">
-          <Sparkles className="h-5 w-5 text-white" strokeWidth={2.5} />
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-lg ring-1 ring-white/20 backdrop-blur-sm">
+          <Sparkles className="h-6 w-6 text-white" strokeWidth={2.5} />
         </div>
         <div className="relative flex flex-col">
           <span className="text-sm font-bold tracking-tight text-white">HRMS Suite</span>
@@ -136,7 +136,7 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
         </div>
       </Link>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--sidebar-muted)]">
           Navigation
         </p>
@@ -148,10 +148,10 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] transition-all",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] transition-all duration-200 ease-out",
                 active
                   ? "bg-gradient-to-r from-indigo-500/20 to-violet-500/15 text-[var(--sidebar-strong)] font-bold shadow-sm ring-1 ring-inset ring-indigo-500/20"
-                  : "font-medium text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-strong)]"
+                  : "font-medium text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-strong)] hover:-translate-x-0.5"
               )}
             >
               {active && (
