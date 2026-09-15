@@ -81,7 +81,7 @@ export {
   Table,
   TableHeader,
   TableBody,
-  TableHead,
   TableRow,
+  TableHead,
   TableCell,
 };

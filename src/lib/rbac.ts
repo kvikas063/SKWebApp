@@ -36,3 +36,9 @@ export function isAdmin(user: SessionUser): boolean {
 export function isManager(user: SessionUser): boolean {
   return user.role === UserRole.MANAGER;
 }
+
+export async function requireManager(): Promise<SessionUser> {
+  const user = await requireAuth();
+  if (!isManager(user)) redirect("/dashboard");
+  return user;
+}

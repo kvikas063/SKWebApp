@@ -301,7 +301,7 @@ function AdminDashboard({
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+<div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -383,7 +383,7 @@ function AdminDashboard({
             ) : (
               <div className="space-y-3">
                 {data.pendingLeaveReqs.map((req) => (
-                  <div key={req.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div key={req.id} className="flex items-center justify-between rounded-xl border p-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         {req.employee.firstName} {req.employee.lastName}
@@ -435,7 +435,7 @@ function AdminDashboard({
                 return (
                   <li
                     key={log.id}
-                    className="group relative flex gap-4 px-6 py-4 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/30"
+                    className="group relative flex gap-4 px-6 py-4 transition-colors duration-200 ease-out hover:bg-slate-50/60 dark:hover:bg-slate-900/30"
                   >
                     {!isLast && (
                       <span
@@ -445,7 +445,7 @@ function AdminDashboard({
                     )}
                     <div className="relative shrink-0">
                       <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-xl ${style.iconBg} ${style.iconColor} shadow-lg ring-4 ${style.ring}`}
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl ${style.iconBg} ${style.iconColor} shadow-lg ring-4 ${style.ring}`}
                       >
                         <Icon className="h-5 w-5" strokeWidth={2.5} />
                       </div>
@@ -458,7 +458,7 @@ function AdminDashboard({
                         <span className="text-sm text-muted-foreground">
                           {actionPreposition(log.action)}
                         </span>
-                          <span className="inline-flex items-center rounded-md border border-slate-300 bg-slate-50 px-1.5 py-0.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        <span className="inline-flex items-center rounded-md border border-slate-300 bg-slate-50 px-1.5 py-0.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                           {formatEntityType(log.entityType)}
                         </span>
                       </div>

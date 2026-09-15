@@ -1117,6 +1117,97 @@ async function main() {
 
   console.log(`Seeded ${payrollRunsCreated} pay runs and ${payrollSlipsCreated} payslips`);
 
+// ─── Projects
+  const empRahul = await prisma.employee.findUnique({ where: { companyId_employeeCode: { companyId: company.id, employeeCode: "EMP001" } } });
+  const empPriya = await prisma.employee.findUnique({ where: { companyId_employeeCode: {companyId: company.id, employeeCode: "EMP002" } } });
+  const empAmit = await prisma.employee.findUnique({ where: { companyId_employeeCode: {companyId: company.id, employeeCode: "EMP003" } } });
+
+  const demoProjects = [
+    {
+      projectId: "PRJ-2026-001",
+      name: "Skyline Tower",
+      description: "45-story commercial tower in downtown Bengaluru",
+      status: "IN_PROGRESS" as any,
+      priority: "HIGH" as any,
+      location: "Whitefield, Bengaluru",
+      budgetPaise: BigInt(5000000000),
+      startDate: new Date("2026-01-15"),
+      endDate: new Date("2026-12-31"),
+      managerId: empPriya?.id,
+    },
+    {
+      projectId: "PRJ-2026-002",
+      name: "Riverside Residential",
+      description: "120-unit gated community on the Mysore Road",
+      status: "PLANNING" as any,
+      priority: "MEDIUM" as any,
+      location: "Mysore Road, Bengaluru",
+      budgetPaise: BigInt(3500000000),
+      startDate: new Date("2026-03-01"),
+      endDate: new Date("2027-06-30"),
+      managerId: empPriya?.id,
+    },
+    {
+      projectId: "PRJ-2026-003",
+      name: "Warehouse Expansion",
+      description: "Cold storage warehouse expansion for FMCG distributor",
+      status: "IN_PROGRESS" as any,
+      priority: "LOW" as any,
+      location: "Dabaspete Industrial Area",
+      budgetPaise: BigInt(1200000000),
+      startDate: new Date("2026-02-10"),
+      endDate: new Date("2026-09-30"),
+      managerId: empRahul?.id,
+    },
+    {
+      projectId: "PRJ-2026-004",
+      name: "Highway Bridge",
+      description: "NH-44 flyover construction over river crossing",
+      status: "ON_HOLD" as any,
+      priority: "CRITICAL" as any,
+      location: "NH-44, Tamil Nadu",
+      budgetPaise: BigInt(8000000000),
+      startDate: new Date("2026-04-01"),
+      endDate: new Date("2027-03-31"),
+      managerId: empPriya?.id,
+    },
+    {
+      projectId: "PRJ-2026-005",
+      name: "Mall Renovation",
+      description: "Legacy mall facelift and tenant onboarding",
+      status: "COMPLETED" as any,
+      priority: "MEDIUM" as any,
+      location: "Koramangala, Bengaluru",
+      budgetPaise: BigInt(900000000),
+      startDate: new Date("2025-06-01"),
+      endDate: new Date("2026-01-31"),
+      managerId: empAmit?.id,
+    },
+  ];
+
+  let projectsCreated = 0;
+  for (const p of demoProjects) {
+    const exists = await prisma.project.findUnique({ where: { projectId: p.projectId } });
+    if (exists) continue;
+    await prisma.project.create({
+      data: {
+        projectId: p.projectId,
+        name: p.name,
+        description: p.description,
+        status: p.status,
+        priority: p.priority,
+        location: p.location,
+        budgetPaise: p.budgetPaise,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        managerId: p.managerId,
+        companyId: company.id,
+      },
+    });
+    projectsCreated++;
+  }
+  console.log(`Seeded ${projectsCreated} projects`);
+
   console.log("Seed complete!");
   console.log("Admin login: admin@demo.com / admin123");
   console.log("Employee login: rahul@demo.com / employee123");
