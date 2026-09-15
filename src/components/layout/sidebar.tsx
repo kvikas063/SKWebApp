@@ -22,6 +22,7 @@ import {
   Network,
   Mail,
   File,
+  FolderKanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
@@ -31,6 +32,7 @@ import type { UserRole } from "@prisma/client";
 
 const adminNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/org-chart", label: "Org Chart", icon: Network },
   { href: "/attendance", label: "Attendance", icon: Clock },
@@ -45,6 +47,7 @@ const adminNav = [
 
 const managerNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/org-chart", label: "Org Chart", icon: Network },
   { href: "/attendance", label: "Attendance", icon: Clock },
