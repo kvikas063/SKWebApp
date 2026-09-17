@@ -135,14 +135,12 @@ function LoginForm() {
         </div>
       </main>
 
-      <footer className="relative z-10 mt-auto border-t border-white/10 px-4 py-2 backdrop-blur-md dark:border-white/5" style={{ backgroundColor: "#f5eeed", color: "#48069e" }}>
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-xs">
-            © {new Date().getFullYear()} <span className="font-semibold">HRMS Suite</span>. All rights reserved.
+      <footer className="relative z-10 mt-auto border-t bg-card/40 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 py-2.5 text-xs text-muted-foreground sm:flex-row sm:px-6">
+          <p>
+            © {new Date().getFullYear()} <span className="font-semibold text-foreground/80">HRMS Suite</span>. All rights reserved.
           </p>
-          <span className="text-[10px] font-semibold uppercase tracking-wider">
-            v1.0.0
-          </span>
+          <span>HRMS Suite v1.0</span>
         </div>
       </footer>
     </div>
