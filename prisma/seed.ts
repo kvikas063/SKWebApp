@@ -580,21 +580,6 @@ async function main() {
     }
   }
 
-  // ─── Link manager user to EMP001 ─────────────────────────────────────────
-  const managerUser = await prisma.user.findFirst({ where: { email: "manager@demo.com" } });
-  if (managerUser) {
-    const emp001 = await prisma.employee.findFirst({
-      where: { companyId: company.id, employeeCode: "EMP001" },
-    });
-    if (emp001) {
-      await prisma.employee.update({
-        where: { id: emp001.id },
-        data: { userId: managerUser.id },
-      });
-      console.log("Linked manager user to EMP001");
-    }
-  }
-
   // ─── Manager hierarchy ──────────────────────────────────────────────────
   console.log("Seeding manager hierarchy...");
 
