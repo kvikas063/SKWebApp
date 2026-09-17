@@ -1,24 +1,25 @@
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 const publicPaths = ["/login", "/api/auth", "/privacy", "/terms", "/support"];
 
-export async function middleware(req: Request) {
+export function middleware(req: Request) {
   const { pathname } = new URL(req.url);
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-  });
+  // Check for the NextAuth session cookie without decoding the JWT.
+  // This keeps the Edge Function tiny and avoids needing AUTH_SECRET here.
+  const cookieHeader = req.headers.get("cookie") || "";
+  const hasSession =
+    cookieHeader.includes("authjs.session-token") ||
+    cookieHeader.includes("__Secure-authjs.session-token");
 
-  if (!token && !isPublic) {
+  if (!hasSession && !isPublic) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (token && pathname === "/login") {
+  if (hasSession && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
