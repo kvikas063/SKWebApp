@@ -310,7 +310,7 @@ function DocumentsTab({
                          </>
                        )}
                       </Button>
-                      {userRole !== "ADMIN" && (
+                      {userRole === "ADMIN" && (
                         <Button
                           size="sm"
                           variant="destructive"

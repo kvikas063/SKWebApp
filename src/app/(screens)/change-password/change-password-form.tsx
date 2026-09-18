@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { changePassword } from "@/lib/actions/password";
+import { useToast } from "@/lib/hooks/use-toast";
 import {
   Lock,
   Eye,
@@ -85,6 +86,7 @@ function passwordStrength(pw: string) {
 
 export function ChangePasswordForm() {
   const router = useRouter();
+  const toast = useToast();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -116,11 +118,13 @@ export function ChangePasswordForm() {
     const result = await changePassword(current, next, confirm);
     if (!result.ok) {
       setError(result.error);
+      toast.error("Password change failed", result.error);
     } else {
       setSuccess(true);
       setCurrent("");
       setNext("");
       setConfirm("");
+      toast.success("Password updated", "Your password has been changed successfully.");
     }
     setLoading(false);
   }

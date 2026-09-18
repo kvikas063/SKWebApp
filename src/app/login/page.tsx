@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Lock, GraduationCap, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/lib/hooks/use-toast";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toast = useToast();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,10 +35,13 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      const msg = "Invalid email or password";
+      setError(msg);
+      toast.error("Login failed", msg);
       return;
     }
 
+    toast.success("Welcome back!", "Redirecting to dashboard...");
     router.push(callbackUrl);
     router.refresh();
   }

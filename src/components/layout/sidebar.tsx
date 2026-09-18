@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +14,7 @@ import {
   ScrollText,
   LogOut,
   Sparkles,
+  Menu,
   ChevronRight,
   UserCircle,
   Moon,
@@ -84,6 +85,7 @@ function getInitials(name: string) {
 
 export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const nav =
     userRole === "ADMIN"
       ? adminNav
@@ -93,7 +95,32 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const COLLAPSE_WIDTH = 1024;
+
+  useEffect(() => {
+    setMounted(true);
+    const isCollapsed = window.innerWidth < COLLAPSE_WIDTH;
+    setCollapsed(isCollapsed);
+  }, []);
+
+  useEffect(() => {
+    function onResize() {
+      setCollapsed(window.innerWidth < COLLAPSE_WIDTH);
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  function handleNavClick(href: string) {
+    setNavigatingTo(href);
+    const loader = (window as any).__pageLoading;
+    if (loader) loader.start();
+    router.push(href);
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -121,40 +148,66 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
   const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]" style={{ borderColor: "var(--sidebar-border)" }}>
-      <Link
-        href="/dashboard"
-        className="relative flex h-24 items-center gap-3 overflow-hidden border-b bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 px-5 text-white"
-        style={{ borderColor: "var(--sidebar-border)" }}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
-        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-lg ring-1 ring-white/20 backdrop-blur-sm">
-          <Sparkles className="h-6 w-6 text-white" strokeWidth={2.5} />
-        </div>
-        <div className="relative flex flex-col">
-          <span className="text-sm font-bold tracking-tight text-white">HRMS Suite</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/90">
-            {userRole === "ADMIN" ? "HR Admin" : userRole === "MANAGER" ? "Manager Portal" : "Employee Portal"}
-          </span>
-        </div>
-      </Link>
+    <aside
+      className={cn(
+        "flex h-full shrink-0 flex-col bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)] transition-all duration-300 ease-out",
+        collapsed ? "w-20" : "w-72"
+      )}
+      style={{ borderColor: "var(--sidebar-border)" }}
+    >
+      <div className="flex items-center justify-between border-b px-3 py-3" style={{ borderColor: "var(--sidebar-border)" }}>
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
+            <Sparkles className="h-5 w-5 text-white" strokeWidth={2.5} />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-tight text-[var(--sidebar-strong)]">HRMS Suite</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--sidebar-muted)]">
+                {userRole === "ADMIN" ? "HR Admin" : userRole === "MANAGER" ? "Manager Portal" : "Employee Portal"}
+              </span>
+            </div>
+          )}
+        </Link>
+      </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--sidebar-muted)]">
-          Navigation
-        </p>
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
+          {!collapsed && (
+            <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--sidebar-muted)]">
+              Navigation
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-lg text-[var(--sidebar-muted)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-strong)]",
+              collapsed && "mx-auto"
+            )}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
         {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isNavigating = navigatingTo === item.href;
           return (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
+              type="button"
+              onClick={() => handleNavClick(item.href)}
+              disabled={isNavigating}
+              title={collapsed ? item.label : undefined}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] transition-all duration-200 ease-out",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] transition-all duration-200 ease-out text-left w-full",
                 active
                   ? "bg-gradient-to-r from-indigo-500/20 to-violet-500/15 text-[var(--sidebar-strong)] font-bold shadow-sm ring-1 ring-inset ring-indigo-500/20"
-                  : "font-medium text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-strong)] hover:-translate-x-0.5"
+                  : "font-medium text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-strong)] hover:-translate-x-0.5",
+                isNavigating && "opacity-70 cursor-wait",
+                collapsed && "justify-center px-0"
               )}
             >
               {active && (
@@ -167,9 +220,11 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
                 )}
                 strokeWidth={active ? 3 : 2}
               />
-              <span className="flex-1 tracking-tight">{item.label}</span>
-              {active && <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-indigo-300" strokeWidth={3} />}
-            </Link>
+              {!collapsed && (
+                <span className="flex-1 tracking-tight">{item.label}</span>
+              )}
+              {active && !collapsed && <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-indigo-300" strokeWidth={3} />}
+            </button>
           );
         })}
       </nav>
@@ -178,7 +233,10 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
         {open && (
           <div
             role="menu"
-            className="absolute bottom-full left-3 right-3 z-50 mb-2 origin-bottom overflow-hidden rounded-lg border shadow-2xl backdrop-blur animate-sidebar-menu"
+            className={cn(
+              "absolute top-auto bottom-full left-3 right-3 z-50 mb-2 origin-bottom overflow-hidden rounded-lg border shadow-2xl backdrop-blur animate-sidebar-menu",
+              collapsed ? "left-1/2 -translate-x-1/2" : "left-3 right-3"
+            )}
             style={{
               background: "var(--sidebar-menu-bg)",
               borderColor: "var(--sidebar-border)",
@@ -258,10 +316,12 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="menu"
           aria-expanded={open}
+          title={collapsed ? userName : undefined}
           className={cn(
             "flex w-full items-center gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200",
             "bg-[var(--sidebar-hover)]",
-            open ? "ring-1 ring-indigo-500/30" : "hover:ring-1 hover:ring-[var(--sidebar-border)]"
+            open ? "ring-1 ring-indigo-500/30" : "hover:ring-1 hover:ring-[var(--sidebar-border)]",
+            collapsed && "justify-center"
           )}
         >
             <Avatar className="h-9 w-9">
@@ -269,18 +329,22 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
                 {getInitials(userName)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold text-[var(--sidebar-strong)]">{userName}</p>
-              <p className="truncate text-xs text-[var(--sidebar-muted)]">
-                {userEmail ?? userRole.toLowerCase()}
-              </p>
-            </div>
-            <ChevronRight
-              className={cn(
-                "h-4 w-4 text-[var(--sidebar-muted)] transition-transform duration-200",
-                open && "rotate-90"
-              )}
-            />
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-semibold text-[var(--sidebar-strong)]">{userName}</p>
+                <p className="truncate text-xs text-[var(--sidebar-muted)]">
+                  {userEmail ?? userRole.toLowerCase()}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <ChevronRight
+                className={cn(
+                  "h-4 w-4 text-[var(--sidebar-muted)] transition-transform duration-200",
+                  open && "rotate-90"
+                )}
+              />
+            )}
           </button>
       </div>
     </aside>
