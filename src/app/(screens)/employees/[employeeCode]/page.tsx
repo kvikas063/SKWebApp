@@ -1,21 +1,25 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { getEmployeeByCode } from "@/lib/actions/employees";
 import { requireAuth } from "@/lib/rbac";
 import { formatINR } from "@/lib/money";
 import { computePF, computeESI, computePT, computeTDS } from "@/lib/services/payroll-engine";
 import { prisma } from "@/lib/prisma";
 import { EmployeeTabs } from "./employee-tabs";
+import { DeleteEmployeeButton } from "./delete-employee-button";
 import {
-  ArrowLeft,
   Building2,
   Wallet,
   IndianRupee,
   Briefcase,
+  Users,
+  Edit,
 } from "lucide-react";
 
 function getInitials(name: string) {
@@ -80,12 +84,24 @@ export default async function EmployeeDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/employees"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to Employees
-      </Link>
+      <PageHeader
+        title={fullName}
+        description={`Employee Code: ${employee.employeeCode}`}
+        icon={Users}
+        actions={
+          user.role === "ADMIN" ? (
+            <>
+              <Button asChild variant="default" size="default" className="min-w-[120px]">
+                <Link href={`/employees/${employeeCode}/edit`}>
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+              <DeleteEmployeeButton employeeId={employee.id} employeeName={fullName} />
+            </>
+          ) : null
+        }
+      />
 
       <Card className="overflow-hidden">
         <div className="relative h-24 bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600">
@@ -98,8 +114,7 @@ export default async function EmployeeDetailPage({
                 {getInitials(fullName)}
               </AvatarFallback>
             </Avatar>
-            <div className="space-y-4 pb-1">
-              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl">{fullName}</h2>
+            <div className="space-y-3 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={typeColors[employee.employeeType] ?? "secondary"}>
                   {employee.employeeType.replace("_", " ")}

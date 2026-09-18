@@ -8,9 +8,10 @@ import { Plus, Building2, Briefcase, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmployeesList } from "./employees-list";
+import { UserRole } from "@prisma/client";
 
 export default async function EmployeesPage() {
-  await requireAuth();
+  const user = await requireAuth();
   const employees = await getEmployees();
 
   const totalGross = employees.reduce((sum, emp) => {
@@ -26,12 +27,14 @@ export default async function EmployeesPage() {
         description={`${employees.length} active employees across ${departments.size} department${departments.size === 1 ? "" : "s"}`}
         icon={UsersIcon}
         actions={
-          <Button asChild className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 hover:from-indigo-700 hover:to-violet-700">
-            <Link href="/employees/new">
-              <Plus className="h-4 w-4" />
-              Add Employee
-            </Link>
-          </Button>
+          user.role === UserRole.ADMIN ? (
+            <Button asChild className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 hover:from-indigo-700 hover:to-violet-700">
+              <Link href="/employees/new">
+                <Plus className="h-4 w-4" />
+                Add Employee
+              </Link>
+            </Button>
+          ) : null
         }
       />
 
@@ -64,11 +67,13 @@ export default async function EmployeesPage() {
             </div>
             <p className="font-medium">No employees yet</p>
             <p className="text-sm text-muted-foreground">Add your first employee to get started.</p>
-            <Button asChild className="mt-2">
-              <Link href="/employees/new">
-                <Plus className="h-4 w-4" /> Add Employee
-              </Link>
-            </Button>
+            {user.role === UserRole.ADMIN && (
+              <Button asChild className="mt-2">
+                <Link href="/employees/new">
+                  <Plus className="h-4 w-4" /> Add Employee
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (

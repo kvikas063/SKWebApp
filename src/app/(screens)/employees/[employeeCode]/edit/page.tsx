@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { getEmployeeByCode } from "@/lib/actions/employees";
@@ -14,16 +14,12 @@ export default async function EditEmployeePage({
   params: Promise<{ employeeCode: string }>;
 }) {
   const user = await requireAuth();
+  if (user.role !== UserRole.ADMIN) {
+    redirect("/dashboard");
+  }
   const { employeeCode } = await params;
   const employee = await getEmployeeByCode(employeeCode);
   if (!employee) notFound();
-
-  if (user.role === UserRole.MANAGER) {
-    const me = await prisma.employee.findFirst({ where: { userId: user.id } });
-    if (!me || employee.managerId !== me.id) {
-      notFound();
-    }
-  }
 
   return (
     <div className="space-y-6">

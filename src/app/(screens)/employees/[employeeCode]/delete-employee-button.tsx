@@ -38,15 +38,15 @@ export function DeleteEmployeeButton({ employeeId, employeeName }: { employeeId:
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900 dark:hover:bg-rose-950/30">
-          <Trash2 className="h-4 w-4" />
+        <Button variant="destructive" size="default" className="min-w-[120px]">
+          <Trash2 className="h-3.5 w-3.5" />
           Delete
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <Trash2 className="h-5 w-5" />
             </div>
             <DialogTitle>Delete employee?</DialogTitle>
@@ -58,28 +58,30 @@ export function DeleteEmployeeButton({ employeeId, employeeName }: { employeeId:
             is logged in the audit trail.
           </DialogDescription>
           {error && (
-            <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-2 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+            <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">
               {error}
             </div>
           )}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={loading} size="default" className="min-w-[120px]">
             Cancel
           </Button>
           <Button
+            variant="destructive"
             onClick={handleDelete}
             disabled={loading}
-            className="bg-rose-600 text-white hover:bg-rose-700"
+            size="default"
+            className="min-w-[120px]"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Deleting...
               </>
             ) : (
               <>
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
                 Delete
               </>
             )}
