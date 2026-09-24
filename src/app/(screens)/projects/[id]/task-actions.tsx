@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { createTask, updateTask } from "@/lib/actions/projects";
+import type { ProjectTaskWithRelations, TaskPriority } from "@/lib/types/projects";
 
-export function TaskActions({ projectId, task, onSuccess }: { projectId: string; task?: any; onSuccess?: () => void }) {
+export function TaskActions({ projectId, task, onSuccess }: { projectId: string; task?: ProjectTaskWithRelations; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
-  const [priority, setPriority] = useState(task?.priority || "MEDIUM");
+  const [priority, setPriority] = useState<TaskPriority>(task?.priority || "MEDIUM");
   const [dueDate, setDueDate] = useState(task?.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "");
-  const [estimatedHours, setEstimatedHours] = useState(String(task?.estimatedHours || 0));
+  const [estimatedHours, setEstimatedHours] = useState(String(task?.estimatedHours ?? 0));
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,7 +25,7 @@ export function TaskActions({ projectId, task, onSuccess }: { projectId: string;
     setLoading(true);
     try {
       if (task) {
-        await updateTask(task.id, { status: task.status, actualHours: task.actualHours });
+        await updateTask(task.id, { status: task.status, actualHours: task.actualHours ?? 0 });
       } else {
         await createTask(projectId, { title, description, priority, dueDate, estimatedHours: Number(estimatedHours) });
       }
@@ -75,13 +76,13 @@ export function TaskActions({ projectId, task, onSuccess }: { projectId: string;
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
                 <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LOW">Low</SelectItem>
                   <SelectItem value="MEDIUM">Medium</SelectItem>
                   <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="CRITICAL">Critical</SelectItem>
+                  <SelectItem value="URGENT">Urgent</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -31,6 +31,8 @@ import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { UserRole } from "@prisma/client";
 
+type PageLoadingHandlers = { start: () => void; done: () => void };
+
 const adminNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
@@ -102,6 +104,7 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
   const COLLAPSE_WIDTH = 1024;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const isCollapsed = window.innerWidth < COLLAPSE_WIDTH;
     setCollapsed(isCollapsed);
@@ -117,7 +120,7 @@ export function Sidebar({ userName, userRole, userEmail }: SidebarProps) {
 
   function handleNavClick(href: string) {
     setNavigatingTo(href);
-    const loader = (window as any).__pageLoading;
+    const loader = (window as unknown as { __pageLoading?: PageLoadingHandlers }).__pageLoading;
     if (loader) loader.start();
     router.push(href);
   }

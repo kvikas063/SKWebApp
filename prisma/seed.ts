@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, EmployeeType, LeaveType } from "@prisma/client";
+import { PrismaClient, UserRole, EmployeeType, LeaveType, ProjectStatus, ProjectPriority } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 function rupeesToPaise(rupees: number): number {
@@ -76,7 +76,7 @@ async function main() {
   });
 
   const managerHash = await bcrypt.hash("manager123", 12);
-  await prisma.user.upsert({
+  const manager = await prisma.user.upsert({
     where: { email: "manager@demo.com" },
     update: {},
     create: {
@@ -86,6 +86,19 @@ async function main() {
       role: UserRole.MANAGER,
     },
   });
+
+  // Link the manager user to the EMP001 employee record (Rahul Sharma) so the
+  // manager can view their direct reports. Without this, the manager login
+  // has no Employee row and every employee detail page returns 404.
+  const managerEmployee = await prisma.employee.findUnique({
+    where: { companyId_employeeCode: { companyId: company.id, employeeCode: "EMP001" } },
+  });
+  if (managerEmployee && managerEmployee.userId !== manager.id) {
+    await prisma.employee.update({
+      where: { id: managerEmployee.id },
+      data: { userId: manager.id },
+    });
+  }
 
   const leaveTypes = [LeaveType.CASUAL, LeaveType.EARNED, LeaveType.SICK];
   const employeeTypes = [EmployeeType.REGULAR, EmployeeType.PART_TIME, EmployeeType.PROBATION];
@@ -1107,13 +1120,24 @@ async function main() {
   const empPriya = await prisma.employee.findUnique({ where: { companyId_employeeCode: {companyId: company.id, employeeCode: "EMP002" } } });
   const empAmit = await prisma.employee.findUnique({ where: { companyId_employeeCode: {companyId: company.id, employeeCode: "EMP003" } } });
 
-  const demoProjects = [
+  const demoProjects: Array<{
+    projectId: string;
+    name: string;
+    description: string;
+    status: ProjectStatus;
+    priority: ProjectPriority;
+    location: string;
+    budgetPaise: bigint;
+    startDate: Date;
+    endDate: Date;
+    managerId?: string;
+  }> = [
     {
       projectId: "PRJ-2026-001",
       name: "Skyline Tower",
       description: "45-story commercial tower in downtown Bengaluru",
-      status: "IN_PROGRESS" as any,
-      priority: "HIGH" as any,
+      status: ProjectStatus.IN_PROGRESS,
+      priority: ProjectPriority.HIGH,
       location: "Whitefield, Bengaluru",
       budgetPaise: BigInt(5000000000),
       startDate: new Date("2026-01-15"),
@@ -1124,8 +1148,8 @@ async function main() {
       projectId: "PRJ-2026-002",
       name: "Riverside Residential",
       description: "120-unit gated community on the Mysore Road",
-      status: "PLANNING" as any,
-      priority: "MEDIUM" as any,
+      status: ProjectStatus.PLANNING,
+      priority: ProjectPriority.MEDIUM,
       location: "Mysore Road, Bengaluru",
       budgetPaise: BigInt(3500000000),
       startDate: new Date("2026-03-01"),
@@ -1136,8 +1160,8 @@ async function main() {
       projectId: "PRJ-2026-003",
       name: "Warehouse Expansion",
       description: "Cold storage warehouse expansion for FMCG distributor",
-      status: "IN_PROGRESS" as any,
-      priority: "LOW" as any,
+      status: ProjectStatus.IN_PROGRESS,
+      priority: ProjectPriority.LOW,
       location: "Dabaspete Industrial Area",
       budgetPaise: BigInt(1200000000),
       startDate: new Date("2026-02-10"),
@@ -1148,8 +1172,8 @@ async function main() {
       projectId: "PRJ-2026-004",
       name: "Highway Bridge",
       description: "NH-44 flyover construction over river crossing",
-      status: "ON_HOLD" as any,
-      priority: "CRITICAL" as any,
+      status: ProjectStatus.ON_HOLD,
+      priority: ProjectPriority.CRITICAL,
       location: "NH-44, Tamil Nadu",
       budgetPaise: BigInt(8000000000),
       startDate: new Date("2026-04-01"),
@@ -1160,8 +1184,8 @@ async function main() {
       projectId: "PRJ-2026-005",
       name: "Mall Renovation",
       description: "Legacy mall facelift and tenant onboarding",
-      status: "COMPLETED" as any,
-      priority: "MEDIUM" as any,
+      status: ProjectStatus.COMPLETED,
+      priority: ProjectPriority.MEDIUM,
       location: "Koramangala, Bengaluru",
       budgetPaise: BigInt(900000000),
       startDate: new Date("2025-06-01"),

@@ -8,7 +8,9 @@ import { TeamList } from "./team-list";
 import { ReportList } from "./report-list";
 import { ProjectSummary } from "./project-summary";
 
-export function ProjectTabs({ project, employees }: { project: any; employees: any[] }) {
+import type { ProjectWithRelations, EmployeeSummary } from "@/lib/types/projects";
+
+export function ProjectTabs({ project, employees }: { project: ProjectWithRelations; employees: EmployeeSummary[] }) {
   return (
     <Tabs defaultValue="overview" className="space-y-6">
       <TabsList>

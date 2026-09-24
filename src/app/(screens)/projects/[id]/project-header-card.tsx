@@ -1,30 +1,16 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Calendar, Users, Clock, Building2, MapPin, IndianRupee, ArrowLeft } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Calendar, Users, Clock, MapPin, IndianRupee, ArrowLeft } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { formatBudget } from "../budget-utils";
 import { ProjectActions } from "./project-actions";
 
-const statusVariant: Record<string, "default" | "secondary" | "warning" | "success" | "destructive"> = {
-  PLANNING: "secondary",
-  IN_PROGRESS: "warning",
-  ON_HOLD: "destructive",
-  COMPLETED: "success",
-  CANCELLED: "destructive",
-};
+import type { ProjectWithRelations, EmployeeSummary } from "@/lib/types/projects";
 
-const priorityVariant: Record<string, "default" | "secondary" | "warning" | "destructive"> = {
-  LOW: "secondary",
-  MEDIUM: "default",
-  HIGH: "warning",
-  CRITICAL: "destructive",
-};
-
-export function ProjectHeaderCard({ project, employees }: { project: any; employees: any[] }) {
+export function ProjectHeaderCard({ project, employees }: { project: ProjectWithRelations; employees: EmployeeSummary[] }) {
   const managerName = project.manager
     ? `${project.manager.firstName} ${project.manager.lastName}`
     : "Unassigned";
@@ -75,15 +61,15 @@ export function ProjectHeaderCard({ project, employees }: { project: any; employ
           <p className="mt-3 text-sm text-white/90">{project.description}</p>
         )}
 
-        <div className="mt-4 space-y-2">
+<div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium text-white/80">Overall Progress</span>
-            <span className="font-bold">{project.progress}%</span>
+            <span className="font-bold">{project.progress ?? 0}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-white/20">
             <div
               className="h-full rounded-full bg-white transition-all duration-500"
-              style={{ width: `${project.progress}%` }}
+              style={{ width: `${project.progress ?? 0}%` }}
             />
           </div>
         </div>
@@ -134,14 +120,14 @@ export function ProjectHeaderCard({ project, employees }: { project: any; employ
           <IndianRupee className="h-5 w-5 text-emerald-500" />
           <div>
             <p className="text-xs text-muted-foreground">Budget</p>
-            <p className="text-sm font-semibold">{formatBudget(project.budgetPaise)}</p>
+            <p className="text-sm font-semibold">{formatBudget(project.budgetPaise ?? 0)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-md border p-3">
           <Users className="h-5 w-5 text-amber-500" />
           <div>
-            <p className="text-xs text-muted-foreground">Completed At</p>
-            <p className="text-sm font-semibold">{project.completedAt ? formatDate(project.completedAt) : "—"}</p>
+            <p className="text-xs text-muted-foreground">Last Updated</p>
+            <p className="text-sm font-semibold">{project.updatedAt ? formatDate(project.updatedAt) : "—"}</p>
           </div>
         </div>
       </div>

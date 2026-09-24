@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { getProjects, getProjectEmployees } from "@/lib/actions/projects";
 import { requireAuth } from "@/lib/rbac";
-import { Building2, Calendar, Users, TrendingUp, FolderKanban, Wallet } from "lucide-react";
+import { Building2, Calendar, TrendingUp, FolderKanban, Wallet } from "lucide-react";
 import { ProjectCard } from "./project-card";
 import { ProjectFilter } from "./project-filter";
 import { NewProjectPopup } from "./new-project-popup";

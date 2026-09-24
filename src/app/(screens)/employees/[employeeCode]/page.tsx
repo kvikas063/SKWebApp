@@ -20,6 +20,7 @@ import {
   Briefcase,
   Users,
   Edit,
+  ArrowLeft,
 } from "lucide-react";
 
 function getInitials(name: string) {
@@ -54,7 +55,8 @@ export default async function EmployeeDetailPage({
 
   if (user.role === "MANAGER") {
     const me = await prisma.employee.findFirst({ where: { userId: user.id } });
-    if (!me || employee.managerId !== me.id) {
+    // Managers may view their own profile or any of their direct reports.
+    if (!me || (employee.id !== me.id && employee.managerId !== me.id)) {
       notFound();
     }
   }
@@ -89,17 +91,25 @@ export default async function EmployeeDetailPage({
         description={`Employee Code: ${employee.employeeCode}`}
         icon={Users}
         actions={
-          user.role === "ADMIN" ? (
-            <>
-              <Button asChild variant="default" size="default" className="min-w-[120px]">
-                <Link href={`/employees/${employeeCode}/edit`}>
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-              <DeleteEmployeeButton employeeId={employee.id} employeeName={fullName} />
-            </>
-          ) : null
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" size="default" className="min-w-[120px]">
+              <Link href="/org-chart/list?tab=employees">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Link>
+            </Button>
+            {user.role === "ADMIN" ? (
+              <>
+                <Button asChild variant="default" size="default" className="min-w-[120px]">
+                  <Link href={`/employees/${employeeCode}/edit`}>
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Link>
+                </Button>
+                <DeleteEmployeeButton employeeId={employee.id} employeeName={fullName} />
+              </>
+            ) : null}
+          </div>
         }
       />
 

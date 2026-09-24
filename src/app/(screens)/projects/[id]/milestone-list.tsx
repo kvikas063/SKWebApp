@@ -1,19 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, Clock, Plus } from "lucide-react";
+import { Calendar, CheckCircle2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { MilestoneActions } from "./milestone-actions";
+
+import type { MilestoneWithProgress } from "@/lib/types/projects";
 
 const statusVariant: Record<string, "default" | "secondary" | "warning" | "success" | "destructive"> = {
   PENDING: "secondary",
   IN_PROGRESS: "warning",
   COMPLETED: "success",
   DELAYED: "destructive",
-  CANCELLED: "destructive",
 };
 
-export function MilestoneList({ projectId, milestones }: { projectId: string; milestones: any[] }) {
+export function MilestoneList({ projectId, milestones }: { projectId: string; milestones: MilestoneWithProgress[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -64,9 +65,9 @@ export function MilestoneList({ projectId, milestones }: { projectId: string; mi
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium">Progress</span>
-                    <span className="font-bold">{m.progress}%</span>
+                    <span className="font-bold">{m.progress ?? 0}%</span>
                   </div>
-                  <Progress value={m.progress} className="mt-1 h-2" />
+                  <Progress value={m.progress ?? 0} className="mt-1 h-2" />
                 </div>
               </CardContent>
             </Card>

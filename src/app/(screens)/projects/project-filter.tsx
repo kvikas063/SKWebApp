@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
 
 const filters = [
@@ -17,7 +16,6 @@ const filters = [
 
 export function ProjectFilter() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const current = searchParams.get("status") || "";
 

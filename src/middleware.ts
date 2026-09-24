@@ -3,7 +3,15 @@ import { NextResponse } from "next/server";
 const publicPaths = ["/login", "/api/auth", "/privacy", "/terms", "/support"];
 
 export function middleware(req: Request) {
-  const { pathname } = new URL(req.url);
+  const { protocol, pathname } = new URL(req.url);
+
+  // Redirect HTTP -> HTTPS in production so cookies are served securely.
+  if (process.env.NODE_ENV === "production" && protocol === "http:") {
+    const httpsUrl = new URL(req.url);
+    httpsUrl.protocol = "https:";
+    return NextResponse.redirect(httpsUrl, 308);
+  }
+
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
   // Check for the NextAuth session cookie without decoding the JWT.

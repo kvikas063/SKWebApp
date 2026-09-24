@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, FileText } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createProjectReport } from "@/lib/actions/projects";
+import type { ProjectReportWithRelations } from "@/lib/types/projects";
 
-export function ReportActions({ projectId, report, onSuccess }: { projectId: string; report?: any; onSuccess?: () => void }) {
+export function ReportActions({ projectId, report, onSuccess }: { projectId: string; report?: ProjectReportWithRelations; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(report?.title || "");
   const [type, setType] = useState(report?.type || "PROGRESS");

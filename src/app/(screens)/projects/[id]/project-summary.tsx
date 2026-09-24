@@ -1,26 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { BarChart, DonutChart, type DonutSlice } from "@/components/ui/charts";
-import { Clock, TrendingUp, Users, Calendar, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Clock, TrendingUp, Calendar } from "lucide-react";
+import type { ProjectTaskWithRelations, MilestoneWithProgress } from "@/lib/types/projects";
 
-const taskStatusColors: Record<string, string> = {
-  TODO: "#64748b",
-  IN_PROGRESS: "#f59e0b",
-  BLOCKED: "#ef4444",
-  COMPLETED: "#10b981",
-  CANCELLED: "#94a3b8",
-};
-
-export function ProjectSummary({ project }: { project: any }) {
+export function ProjectSummary({ project }: { project: { tasks: ProjectTaskWithRelations[]; milestones: MilestoneWithProgress[] } }) {
   const tasks = project.tasks;
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t: any) => t.status === "COMPLETED").length;
-  const inProgressTasks = tasks.filter((t: any) => t.status === "IN_PROGRESS").length;
-  const blockedTasks = tasks.filter((t: any) => t.status === "BLOCKED").length;
-  const todoTasks = tasks.filter((t: any) => t.status === "TODO").length;
-  const totalEstimated = tasks.reduce((s: number, t: any) => s + (t.estimatedHours || 0), 0);
-  const totalActual = tasks.reduce((s: number, t: any) => s + (t.actualHours || 0), 0);
+  const completedTasks = tasks.filter((t) => t.status === "COMPLETED").length;
+  const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const blockedTasks = tasks.filter((t) => t.status === "BLOCKED").length;
+  const todoTasks = tasks.filter((t) => t.status === "TODO").length;
+  const totalEstimated = tasks.reduce((s, t) => s + (t.estimatedHours || 0), 0);
+  const totalActual = tasks.reduce((s, t) => s + (t.actualHours || 0), 0);
 
   const taskStatusData: DonutSlice[] = [
     { label: "Completed", value: completedTasks, color: "#10b981" },
@@ -29,9 +21,9 @@ export function ProjectSummary({ project }: { project: any }) {
     { label: "Todo", value: todoTasks, color: "#64748b" },
   ].filter((d) => d.value > 0);
 
-  const milestoneData = project.milestones.map((m: any, i: number) => ({
+  const milestoneData = project.milestones.map((m, i) => ({
     label: m.name,
-    value: m.progress,
+    value: m.progress ?? 0,
     color: ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4"][i % 6],
   }));
 
@@ -55,11 +47,11 @@ export function ProjectSummary({ project }: { project: any }) {
               <p className="text-xs text-muted-foreground">Milestone Progress</p>
               <p className="mt-1 text-2xl font-bold">
                 {project.milestones.length > 0
-                  ? Math.round(project.milestones.reduce((s: number, m: any) => s + m.progress, 0) / project.milestones.length)
+                  ? Math.round(project.milestones.reduce((s, m) => s + (m.progress ?? 0), 0) / project.milestones.length)
                   : 0}%
               </p>
               <Progress
-                value={project.milestones.length > 0 ? project.milestones.reduce((s: number, m: any) => s + m.progress, 0) / project.milestones.length : 0}
+                value={project.milestones.length > 0 ? project.milestones.reduce((s, m) => s + (m.progress ?? 0), 0) / project.milestones.length : 0}
                 className="mt-2 h-2"
               />
             </div>
