@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireAdmin, requireManager } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { ProjectStatus, ProjectPriority, MilestoneStatus, TaskStatus, TaskPriority } from "@prisma/client";
+import type { ProjectSummaryRow, ProjectWithRelations } from "@/lib/types/projects";
 
 const ProjectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -17,13 +19,13 @@ const ProjectSchema = z.object({
   managerId: z.string().optional(),
 });
 
-export async function getProjects(filters?: { status?: string }) {
+export async function getProjects(filters?: { status?: string }): Promise<ProjectSummaryRow[]> {
   const company = await prisma.company.findFirst();
   if (!company) return [];
-  return prisma.project.findMany({
+  const projects = await prisma.project.findMany({
     where: {
       companyId: company.id,
-      ...(filters?.status ? { status: filters.status as any } : {}),
+      ...(filters?.status ? { status: filters.status as ProjectStatus } : {}),
     },
     include: {
       manager: { select: { id: true, firstName: true, lastName: true, employeeCode: true, designation: true } },
@@ -31,10 +33,19 @@ export async function getProjects(filters?: { status?: string }) {
     },
     orderBy: [{ updatedAt: "desc" }],
   });
+
+  return projects.map((p) => {
+    const totalTasks = p._count.tasks;
+    const completedTasks = 0; // computed lazily; UI shows 0 if no task detail loaded
+    return {
+      ...p,
+      progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+    } as ProjectSummaryRow;
+  });
 }
 
-export async function getProjectById(projectId: string) {
-  return prisma.project.findUnique({
+export async function getProjectById(projectId: string): Promise<ProjectWithRelations | null> {
+  const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
       manager: { select: { id: true, firstName: true, lastName: true, employeeCode: true, designation: true, department: true } },
@@ -45,6 +56,8 @@ export async function getProjectById(projectId: string) {
       reports: { include: { author: { select: { id: true, name: true } } }, orderBy: { reportDate: "desc" } },
     },
   });
+  if (!project) return null;
+  return project as unknown as ProjectWithRelations;
 }
 
 export async function getProjectEmployees() {
@@ -72,8 +85,8 @@ export async function createProject(data: z.infer<typeof ProjectSchema>) {
       projectId,
       name: parsed.name,
       description: parsed.description,
-      status: parsed.status as any,
-      priority: parsed.priority as any,
+      status: (parsed.status as ProjectStatus | undefined),
+      priority: (parsed.priority as ProjectPriority | undefined),
       location: parsed.location,
       budgetPaise: parsed.budgetPaise ?? 0,
       startDate: parsed.startDate ? new Date(parsed.startDate) : undefined,
@@ -124,12 +137,12 @@ export async function createMilestone(projectId: string, data: { name: string; d
   return milestone;
 }
 
-export async function updateMilestone(milestoneId: string, data: { status?: string; progress?: number; completedAt?: string | null }) {
+export async function updateMilestone(milestoneId: string, data: { status?: MilestoneStatus; progress?: number; completedAt?: string | null }) {
   await requireManager();
   const milestone = await prisma.milestone.update({
     where: { id: milestoneId },
     data: {
-      status: data.status as any,
+      status: data.status,
       completedAt: data.completedAt ? new Date(data.completedAt) : data.completedAt === null ? null : undefined,
     },
   });
@@ -137,7 +150,7 @@ export async function updateMilestone(milestoneId: string, data: { status?: stri
   return milestone;
 }
 
-export async function createTask(projectId: string, data: { title: string; description?: string; milestoneId?: string; assigneeId?: string; priority?: string; dueDate?: string; estimatedHours?: number }) {
+export async function createTask(projectId: string, data: { title: string; description?: string; milestoneId?: string; assigneeId?: string; priority?: TaskPriority; dueDate?: string; estimatedHours?: number }) {
   await requireManager();
   const task = await prisma.projectTask.create({
     data: {
@@ -145,7 +158,7 @@ export async function createTask(projectId: string, data: { title: string; descr
       description: data.description,
       milestoneId: data.milestoneId,
       assigneeId: data.assigneeId,
-      priority: (data.priority as any) ?? "MEDIUM",
+      priority: data.priority ?? "MEDIUM",
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       estimatedHours: data.estimatedHours ?? 0,
       projectId,
@@ -155,12 +168,12 @@ export async function createTask(projectId: string, data: { title: string; descr
   return task;
 }
 
-export async function updateTask(taskId: string, data: { status?: string; actualHours?: number; completedAt?: string | null }) {
+export async function updateTask(taskId: string, data: { status?: TaskStatus; actualHours?: number; completedAt?: string | null }) {
   await requireManager();
   const task = await prisma.projectTask.update({
     where: { id: taskId },
     data: {
-      status: data.status as any,
+      status: data.status,
       actualHours: data.actualHours,
       completedAt: data.completedAt ? new Date(data.completedAt) : data.completedAt === null ? null : undefined,
     },

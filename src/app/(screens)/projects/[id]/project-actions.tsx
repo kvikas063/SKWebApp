@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { createProject, updateProject, deleteProject } from "@/lib/actions/projects";
+import { Pencil, Trash2 } from "lucide-react";
+import { updateProject, deleteProject } from "@/lib/actions/projects";
+import type { ProjectWithRelations, ProjectStatus, ProjectPriority } from "@/lib/types/projects";
 
 interface Employee {
   id: string;
@@ -18,14 +19,14 @@ interface Employee {
   designation: string | null;
 }
 
-export function ProjectActions({ project, employees }: { project: any; employees: Employee[] }) {
+export function ProjectActions({ project, employees }: { project: ProjectWithRelations; employees: Employee[] }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(project.name);
   const [description, setDescription] = useState(project.description || "");
-  const [status, setStatus] = useState(project.status);
-  const [priority, setPriority] = useState(project.priority);
+  const [status, setStatus] = useState<ProjectStatus>(project.status);
+  const [priority, setPriority] = useState<ProjectPriority>(project.priority);
   const [location, setLocation] = useState(project.location || "");
-  const [budgetPaise, setBudgetPaise] = useState(String(Number(project.budgetPaise) / 100));
+  const [budgetPaise, setBudgetPaise] = useState(String(Number(project.budgetPaise ?? 0) / 100));
   const [startDate, setStartDate] = useState(project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "");
   const [endDate, setEndDate] = useState(project.endDate ? new Date(project.endDate).toISOString().split("T")[0] : "");
   const [managerId, setManagerId] = useState(project.managerId || "");
@@ -76,33 +77,33 @@ export function ProjectActions({ project, employees }: { project: any; employees
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger id="status"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PLANNING">Planning</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="ON_HOLD">On Hold</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
-                    <SelectItem value="CRITICAL">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+<div className="grid grid-cols-2 gap-3">
+               <div className="space-y-1.5">
+                 <Label htmlFor="status">Status</Label>
+                 <Select value={status} onValueChange={(v) => setStatus(v as ProjectStatus)}>
+                   <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="PLANNING">Planning</SelectItem>
+                     <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                     <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                     <SelectItem value="COMPLETED">Completed</SelectItem>
+                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+               <div className="space-y-1.5">
+                 <Label htmlFor="priority">Priority</Label>
+                 <Select value={priority} onValueChange={(v) => setPriority(v as ProjectPriority)}>
+                   <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="LOW">Low</SelectItem>
+                     <SelectItem value="MEDIUM">Medium</SelectItem>
+                     <SelectItem value="HIGH">High</SelectItem>
+                     <SelectItem value="CRITICAL">Critical</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="location">Location</Label>

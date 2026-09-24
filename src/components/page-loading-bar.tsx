@@ -23,9 +23,9 @@ export function PageLoadingBar() {
       start: () => setVisible(true),
       done: () => setVisible(false),
     };
-    (window as any).__pageLoading = handlers;
+    (window as unknown as { __pageLoading?: typeof handlers }).__pageLoading = handlers;
     return () => {
-      delete (window as any).__pageLoading;
+      delete (window as unknown as { __pageLoading?: typeof handlers }).__pageLoading;
     };
   }, []);
 

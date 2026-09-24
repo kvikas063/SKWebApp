@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
+import type { ProjectStatus, ProjectPriority } from "@prisma/client";
 
 interface Employee {
   id: string;
@@ -24,8 +25,8 @@ export function NewProjectPopup({ children, employees }: { children?: React.Reac
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("PLANNING");
-  const [priority, setPriority] = useState("MEDIUM");
+  const [status, setStatus] = useState<ProjectStatus>("PLANNING");
+  const [priority, setPriority] = useState<ProjectPriority>("MEDIUM");
   const [location, setLocation] = useState("");
   const [budgetPaise, setBudgetPaise] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -40,8 +41,8 @@ export function NewProjectPopup({ children, employees }: { children?: React.Reac
       const result = await createProject({
         name,
         description,
-        status: status as any,
-        priority: priority as any,
+        status,
+        priority,
         location,
         budgetPaise: Number(budgetPaise) * 100,
         startDate,
@@ -83,7 +84,7 @@ export function NewProjectPopup({ children, employees }: { children?: React.Reac
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status} onValueChange={(v) => setStatus(v as ProjectStatus)}>
                 <SelectTrigger id="status"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PLANNING">Planning</SelectItem>
@@ -96,7 +97,7 @@ export function NewProjectPopup({ children, employees }: { children?: React.Reac
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={(v) => setPriority(v as ProjectPriority)}>
                 <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LOW">Low</SelectItem>

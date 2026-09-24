@@ -1,10 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus } from "lucide-react";
+import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { ReportActions } from "./report-actions";
 import { ReportPreviewDialog } from "./report-preview-dialog";
+
+import type { ProjectReportWithRelations } from "@/lib/types/projects";
 
 const typeLabels: Record<string, string> = {
   PROGRESS: "Progress",
@@ -13,7 +15,7 @@ const typeLabels: Record<string, string> = {
   SAFETY: "Safety",
 };
 
-export function ReportList({ projectId, reports, projectLabel }: { projectId: string; reports: any[]; projectLabel?: string }) {
+export function ReportList({ projectId, reports, projectLabel }: { projectId: string; reports: ProjectReportWithRelations[]; projectLabel?: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -50,11 +52,11 @@ export function ReportList({ projectId, reports, projectLabel }: { projectId: st
                       </Badge>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{r.content}</p>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{r.author.firstName} {r.author.lastName}</span>
-                      <span>·</span>
-                      <span>{formatDate(r.reportDate)}</span>
-                    </div>
+<div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                       <span>{r.author.name}</span>
+                       <span>·</span>
+                       <span>{formatDate(r.reportDate)}</span>
+                     </div>
                   </div>
                   <ReportActions projectId={projectId} report={r} />
                 </div>

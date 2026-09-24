@@ -141,7 +141,7 @@ function LoginForm() {
       </main>
 
       <footer className="relative z-10 mt-auto border-t bg-card/40 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 py-2.5 text-xs text-muted-foreground sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-2xl flex-col items-center justify-between gap-3 px-4 py-2.5 text-xs text-muted-foreground sm:flex-row sm:px-6">
           <p>
             © {new Date().getFullYear()} <span className="font-semibold text-foreground/80">HRMS Suite</span>. All rights reserved.
           </p>

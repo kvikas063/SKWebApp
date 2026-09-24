@@ -8,16 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { addTeamMember, removeTeamMember } from "@/lib/actions/projects";
+import type { ProjectTeamMemberWithRelations, EmployeeSummary } from "@/lib/types/projects";
 
-interface Employee {
-  id: string;
-  firstName: string;
-  lastName: string;
-  employeeCode: string;
-  designation: string | null;
-}
-
-export function TeamActions({ projectId, member, employees, onSuccess }: { projectId: string; member?: any; employees: Employee[]; onSuccess?: () => void }) {
+export function TeamActions({ projectId, member, employees, onSuccess }: { projectId: string; member?: ProjectTeamMemberWithRelations; employees: EmployeeSummary[]; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [employeeId, setEmployeeId] = useState("");
   const [role, setRole] = useState("");

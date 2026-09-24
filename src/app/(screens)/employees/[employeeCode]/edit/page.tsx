@@ -5,7 +5,6 @@ import { getEmployeeByCode } from "@/lib/actions/employees";
 import { requireAuth } from "@/lib/rbac";
 import { EditEmployeeForm } from "./edit-employee-form";
 import { ArrowLeft, UserCog } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 
 export default async function EditEmployeePage({

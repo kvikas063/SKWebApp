@@ -30,7 +30,7 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 const SelectScrollUpButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
->(({ className, ...props }, ref) => (
+>(({ className, ...props }) => (
   <SelectPrimitive.ScrollUpButton
     className={cn("flex cursor-default items-center justify-center py-1", className)}
     {...props}
@@ -43,7 +43,7 @@ SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
 const SelectScrollDownButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
->(({ className, ...props }, ref) => (
+>(({ className, ...props }) => (
   <SelectPrimitive.ScrollDownButton
     className={cn("flex cursor-default items-center justify-center py-1", className)}
     {...props}

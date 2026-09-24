@@ -24,12 +24,19 @@ const TAB_META: Record<TabKey, { label: string; icon: typeof Users; description:
 
 export default async function OrgChartListPage({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireAuth();
-  const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
+  const isManager = user.role === UserRole.MANAGER;
+  const isAdmin = user.role === UserRole.ADMIN || isManager;
   const company = await prisma.company.findFirst();
   if (!company) return null;
 
   const params = await searchParams;
   const tab: TabKey = isTabKey(params.tab) ? params.tab : "employees";
+
+  // For managers, find their own employee record so we can filter the
+  // "View" button to only their direct reports.
+  const me = isManager
+    ? await prisma.employee.findFirst({ where: { userId: user.id }, select: { id: true } })
+    : null;
 
   const employeesRaw = await prisma.employee.findMany({
     where: { companyId: company.id, isActive: true },
@@ -42,6 +49,7 @@ export default async function OrgChartListPage({ searchParams }: { searchParams:
       email: true,
       department: true,
       designation: true,
+      managerId: true,
       directReports: { select: { id: true } },
       paySlips: {
         orderBy: { id: "desc" },
@@ -59,6 +67,7 @@ export default async function OrgChartListPage({ searchParams }: { searchParams:
     email: e.email,
     department: e.department,
     designation: e.designation,
+    managerId: e.managerId,
     directReportCount: e.directReports.length,
     latestNetPaise: e.paySlips[0]?.netPaise ?? 0,
   }));
@@ -147,6 +156,7 @@ export default async function OrgChartListPage({ searchParams }: { searchParams:
             managers={managers}
             departments={departments}
             isAdmin={isAdmin}
+            managerId={me?.id ?? null}
           />
         </CardContent>
       </Card>

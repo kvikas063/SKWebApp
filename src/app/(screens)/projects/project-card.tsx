@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Users, Clock, ArrowRight, Building2 } from "lucide-react";
+import { Users, Clock, ArrowRight, Building2 } from "lucide-react";
 import { formatBudget } from "./budget-utils";
+
+import type { ProjectSummaryRow } from "@/lib/types/projects";
 
 const statusVariant: Record<string, "default" | "secondary" | "warning" | "success" | "destructive"> = {
   PLANNING: "secondary",
@@ -20,7 +22,7 @@ const priorityVariant: Record<string, "default" | "secondary" | "warning" | "des
   CRITICAL: "destructive",
 };
 
-export function ProjectCard({ project }: { project: any }) {
+export function ProjectCard({ project }: { project: ProjectSummaryRow }) {
   const managerName = project.manager
     ? `${project.manager.firstName} ${project.manager.lastName}`
     : "Unassigned";
@@ -93,12 +95,12 @@ export function ProjectCard({ project }: { project: any }) {
           </div>
         </div>
 
-{Number(project.budgetPaise) > 0 && (
-            <div className="mt-3 flex items-center justify-between rounded-md bg-muted/60 px-3 py-2">
-              <span className="text-xs text-muted-foreground">Budget</span>
-              <span className="text-xs font-bold">{formatBudget(project.budgetPaise)}</span>
-            </div>
-          )}
+{Number(project.budgetPaise ?? 0) > 0 && (
+             <div className="mt-3 flex items-center justify-between rounded-md bg-muted/60 px-3 py-2">
+               <span className="text-xs text-muted-foreground">Budget</span>
+               <span className="text-xs font-bold">{formatBudget(project.budgetPaise ?? 0)}</span>
+             </div>
+           )}
       </div>
     </Link>
   );

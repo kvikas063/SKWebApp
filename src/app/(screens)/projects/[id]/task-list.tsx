@@ -1,26 +1,28 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Clock, AlertCircle, Plus } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { TaskActions } from "./task-actions";
+
+import type { ProjectTaskWithRelations } from "@/lib/types/projects";
 
 const statusVariant: Record<string, "default" | "secondary" | "warning" | "success" | "destructive"> = {
   TODO: "secondary",
   IN_PROGRESS: "warning",
-  BLOCKED: "destructive",
+  REVIEW: "default",
   COMPLETED: "success",
-  CANCELLED: "destructive",
+  BLOCKED: "destructive",
 };
 
 const priorityVariant: Record<string, "default" | "secondary" | "warning" | "destructive"> = {
   LOW: "secondary",
   MEDIUM: "default",
   HIGH: "warning",
-  CRITICAL: "destructive",
+  URGENT: "destructive",
 };
 
-export function TaskList({ projectId, tasks }: { projectId: string; tasks: any[] }) {
+export function TaskList({ projectId, tasks }: { projectId: string; tasks: ProjectTaskWithRelations[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -61,12 +63,12 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: any[]
                             Due {formatDate(t.dueDate)}
                           </span>
                         )}
-                        {t.estimatedHours > 0 && (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {t.actualHours.toFixed(0)}/{t.estimatedHours.toFixed(0)}h
-                          </span>
-                        )}
+{t.estimatedHours && t.estimatedHours > 0 && (
+                           <span className="inline-flex items-center gap-1">
+                             <Clock className="h-3 w-3" />
+                             {t.actualHours?.toFixed(0) ?? 0}/{t.estimatedHours.toFixed(0)}h
+                           </span>
+                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

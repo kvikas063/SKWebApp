@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 
 interface ExportReportButtonProps {
   projectId: string;

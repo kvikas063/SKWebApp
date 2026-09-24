@@ -16,6 +16,7 @@ export type OrgEmployee = {
   email: string;
   department: string | null;
   designation: string | null;
+  managerId: string | null;
   directReportCount: number;
   latestNetPaise: number;
 };
@@ -42,12 +43,14 @@ export function OrgDirectoryTable({
   managers,
   departments,
   isAdmin,
+  managerId,
 }: {
   tab: "employees" | "managers" | "departments";
   employees: OrgEmployee[];
   managers: OrgEmployee[];
   departments: OrgDepartment[];
   isAdmin: boolean;
+  managerId?: string | null;
 }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -250,15 +253,27 @@ export function OrgDirectoryTable({
                   <TableCell className="text-right font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
                     {e.latestNetPaise > 0 ? formatINR(e.latestNetPaise) : "—"}
                   </TableCell>
-                  {isAdmin && (
+{isAdmin && (
                     <TableCell>
-                      <Link
-                         href={`/employees/${e.employeeCode}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-                      >
-                        View
-                        <ChevronRight className="h-3 w-3" />
-                      </Link>
+                      {managerId ? (
+                        e.managerId === managerId || e.id === managerId ? (
+                          <Link
+                            href={`/employees/${e.employeeCode}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                          >
+                            View
+                            <ChevronRight className="h-3 w-3" />
+                          </Link>
+                        ) : null
+                      ) : (
+                        <Link
+                          href={`/employees/${e.employeeCode}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                        >
+                          View
+                          <ChevronRight className="h-3 w-3" />
+                        </Link>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>

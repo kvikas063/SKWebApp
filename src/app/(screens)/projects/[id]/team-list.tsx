@@ -1,10 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Plus, Trash2, Briefcase } from "lucide-react";
+import { User, Briefcase } from "lucide-react";
 import { TeamActions } from "./team-actions";
+import type { ProjectTeamMemberWithRelations, EmployeeSummary } from "@/lib/types/projects";
 
-export function TeamList({ projectId, members, employees }: { projectId: string; members: any[]; employees: any[] }) {
+export function TeamList({ projectId, members, employees }: { projectId: string; members: ProjectTeamMemberWithRelations[]; employees: EmployeeSummary[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

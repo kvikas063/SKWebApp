@@ -6,17 +6,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { createMilestone, updateMilestone } from "@/lib/actions/projects";
+import type { MilestoneWithProgress } from "@/lib/types/projects";
 
-interface MilestoneFormProps {
-  projectId: string;
-  milestone?: any;
-  onSuccess: () => void;
-  trigger: React.ReactNode;
-}
-
-export function MilestoneActions({ projectId, milestone, onSuccess }: { projectId: string; milestone?: any; onSuccess?: () => void }) {
+export function MilestoneActions({ projectId, milestone, onSuccess }: { projectId: string; milestone?: MilestoneWithProgress; onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(milestone?.name || "");
   const [description, setDescription] = useState(milestone?.description || "");
