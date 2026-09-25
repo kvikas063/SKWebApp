@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Footer } from "@/components/layout/footer";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { PageLoadingBar } from "@/components/page-loading-bar";
+import { HydrationReporter } from "@/components/hydration-reporter";
 import { getMyNotifications, getUnreadNotificationCount } from "@/lib/actions/notifications";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       <PageLoadingBar />
+      <HydrationReporter />
       <Sidebar
         userName={displayName}
         userRole={displayRole}
