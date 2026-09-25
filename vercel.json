@@ -32,12 +32,10 @@
   ],
   "functions": {
     "src/app/api/documents/upload/route.ts": {
-      "maxDuration": 30,
-      "bodySizeLimit": "5mb"
+      "maxDuration": 30
     },
     "src/app/api/documents/[documentId]/route.ts": {
-      "maxDuration": 30,
-      "bodySizeLimit": "5mb"
+      "maxDuration": 30
     }
   }
 }
