@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
+import { fileToBuffer, deleteFile } from "@/lib/storage";
 
 export async function GET(
   _req: NextRequest,
@@ -27,21 +27,23 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!fs.existsSync(doc.filePath)) {
-    return NextResponse.json({ error: "File not found on disk" }, { status: 404 });
+  try {
+    const fileBuffer = await fileToBuffer(doc.filePath);
+    const isPreview = _req.nextUrl.searchParams.get("preview") === "true";
+
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": doc.mimeType ?? "application/octet-stream",
+        "Content-Disposition": isPreview
+          ? "inline"
+          : `attachment; filename="${encodeURIComponent(doc.fileName)}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
-
-  const fileBuffer = fs.readFileSync(doc.filePath);
-  const isPreview = _req.nextUrl.searchParams.get("preview") === "true";
-
-  return new NextResponse(fileBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type": doc.mimeType ?? "application/octet-stream",
-      "Content-Disposition": isPreview ? "inline" : `attachment; filename="${encodeURIComponent(doc.fileName)}"`,
-      "Cache-Control": "no-store",
-    },
-  });
 }
 
 export async function DELETE(
@@ -64,9 +66,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Document not found or access denied" }, { status: 404 });
   }
 
-  if (fs.existsSync(doc.filePath)) {
-    fs.unlinkSync(doc.filePath);
-  }
+  await deleteFile(doc.filePath);
 
   await prisma.employeeDocument.delete({
     where: { id: documentId },

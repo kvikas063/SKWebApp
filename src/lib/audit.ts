@@ -11,6 +11,10 @@ type AuditParams = {
 };
 
 export async function logAudit(params: AuditParams): Promise<void> {
+  // Audit logging must never break the caller's request, but silently
+  // swallowing failures hides data-loss. Log to stderr so operators can
+  // spot a broken audit trail (e.g. a missing column after a migration)
+  // instead of discovering it during an incident review.
   try {
     await prisma.auditLog.create({
       data: {
@@ -24,6 +28,10 @@ export async function logAudit(params: AuditParams): Promise<void> {
       },
     });
   } catch (err) {
-    console.error("Audit log failed:", err);
+    console.error("[audit] failed to write audit log", {
+      action: params.action,
+      entityType: params.entityType,
+      err,
+    });
   }
 }

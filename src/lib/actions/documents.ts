@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
-import fs from "fs";
+import { deleteFile } from "@/lib/storage";
 
 export async function getEmployeeDocuments(employeeId: string) {
   const user = await requireAuth();
@@ -33,9 +33,7 @@ export async function deleteEmployeeDocument(documentId: string) {
     throw new Error("Document not found or access denied");
   }
 
-  if (fs.existsSync(doc.filePath)) {
-    fs.unlinkSync(doc.filePath);
-  }
+  await deleteFile(doc.filePath);
 
   await prisma.employeeDocument.delete({
     where: { id: documentId },

@@ -29,5 +29,15 @@
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/documents/upload/route.ts": {
+      "maxDuration": 30,
+      "bodySizeLimit": "5mb"
+    },
+    "src/app/api/documents/[documentId]/route.ts": {
+      "maxDuration": 30,
+      "bodySizeLimit": "5mb"
+    }
+  }
 }

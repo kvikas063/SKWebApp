@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import path from "path";
-import fs from "fs";
+import { saveFile } from "@/lib/storage";
 import type { DocumentType } from "@prisma/client";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -63,30 +62,14 @@ export async function POST(req: NextRequest) {
 
   const docType = type as DocumentType;
 
-  // Scope the upload directory to a fixed subfolder of the project so
-  // Turbopack can statically trace the filesystem access. Without this the
-  // dynamic env-driven path causes the whole project to be bundled into the
-  // server function graph, inflating cold starts.
-  const baseDir = process.env.UPLOAD_DIR
-    ? path.resolve(process.env.UPLOAD_DIR)
-    : path.join(process.cwd(), "uploads");
-  const absoluteDir = path.join(baseDir, "documents");
-  if (!fs.existsSync(absoluteDir)) {
-    fs.mkdirSync(absoluteDir, { recursive: true });
-  }
-
-  const safeFileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const absolutePath = path.join(absoluteDir, safeFileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  fs.writeFileSync(absolutePath, buffer);
+  const stored = await saveFile(file, "documents");
 
   const doc = await prisma.employeeDocument.create({
     data: {
       employeeId: session.user.employeeId,
       type: docType,
       fileName: file.name,
-      filePath: absolutePath,
+      filePath: stored.url,
       mimeType: file.type || null,
       fileSize: file.size || null,
     },
