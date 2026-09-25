@@ -63,8 +63,14 @@ export async function POST(req: NextRequest) {
 
   const docType = type as DocumentType;
 
-  const uploadDir = process.env.UPLOAD_DIR ?? "./uploads";
-  const absoluteDir = path.resolve(uploadDir);
+  // Scope the upload directory to a fixed subfolder of the project so
+  // Turbopack can statically trace the filesystem access. Without this the
+  // dynamic env-driven path causes the whole project to be bundled into the
+  // server function graph, inflating cold starts.
+  const baseDir = process.env.UPLOAD_DIR
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), "uploads");
+  const absoluteDir = path.join(baseDir, "documents");
   if (!fs.existsSync(absoluteDir)) {
     fs.mkdirSync(absoluteDir, { recursive: true });
   }
