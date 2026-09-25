@@ -4,23 +4,31 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// On Vercel (and any serverless runtime) every cold container starts a fresh
-// Node process, so a plain PrismaClient pays a full DB connection + engine
-// startup on the first request of each instance. Strip the connection pool
-// down to a single connection to avoid exhausting the Postgres limit and
-// keep cold starts cheap. Use a pooled URL when one is provided (e.g. a
-// pgBouncer proxy), otherwise fall back to the raw DATABASE_URL.
-const pooledUrl = process.env.DATABASE_URL
-  ? process.env.DATABASE_URL +
-    (process.env.DATABASE_URL.includes("?") ? "&" : "?") +
-    "connection_limit=1&pool_timeout=10"
-  : undefined;
+// Neon's pooled endpoint (-pooler.<host>) and pgBouncer URLs already manage
+// connection multiplexing server-side. Prisma's own connection_limit would
+// just add a second layer of throttling — and a tight pool_timeout makes
+// queries queue, which on a saturated pooler shows up as multi-second stalls.
+// Only append pool params for plain (non-pooled) Postgres, i.e. local dev.
+function datasourceUrl(): string | undefined {
+  const url = process.env.DATABASE_URL;
+  if (!url) return undefined;
+  const isPooled =
+    url.includes("-pooler.") ||
+    url.includes("pgbouncer=true") ||
+    url.startsWith("prisma+postgres://") ||
+    url.includes("pooled.db.prisma.io");
+  if (isPooled) return url;
+  // Local dev: cap the pool so one process can't exhaust the dev Postgres.
+  return url + (url.includes("?") ? "&" : "?") + "connection_limit=1&pool_timeout=10";
+}
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createClient(): PrismaClient {
+  return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    datasourceUrl: pooledUrl,
+    datasourceUrl: datasourceUrl(),
   });
+}
+
+export const prisma = globalForPrisma.prisma ?? createClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
