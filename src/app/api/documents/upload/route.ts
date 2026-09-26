@@ -78,9 +78,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(doc, { status: 201 });
   } catch (err) {
-    console.error("[upload] failed to store document", { err, employeeId: session.user.employeeId });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[upload] failed to store document", {
+      err,
+      employeeId: session.user.employeeId,
+      fileName: file.name,
+      fileSize: file.size,
+      nodeEnv: process.env.NODE_ENV,
+      hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN,
+      hasStoreId: !!process.env.BLOB_STORE_ID,
+    });
     return NextResponse.json(
-      { error: "Failed to store document. Please verify BLOB storage is configured." },
+      { error: `Failed to store document: ${message}` },
       { status: 500 }
     );
   }

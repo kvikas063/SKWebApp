@@ -30,20 +30,27 @@ export async function saveFile(file: File, folder: string): Promise<StoredFile> 
   const safeName = `${Date.now()}-${sanitizeFileName(file.name)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (isProd) {
-    const blobPath = `${folder}/${safeName}`;
-    const blob = await put(blobPath, buffer, {
-      access: "public",
-      contentType: file.type,
-    });
-    return {
-      url: blob.url,
-      size: file.size,
-      mimeType: file.type || "application/octet-stream",
-    };
+  if (isProd && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const blobPath = `${folder}/${safeName}`;
+      const blob = await put(blobPath, buffer, {
+        access: "public",
+        contentType: file.type,
+      });
+      return {
+        url: blob.url,
+        size: file.size,
+        mimeType: file.type || "application/octet-stream",
+      };
+    } catch (err) {
+      console.error("[storage] Blob put failed, falling back to /tmp", { err });
+    }
   }
 
-  const baseDir = process.env.UPLOAD_DIR ? resolve(process.env.UPLOAD_DIR) : join(process.cwd(), "uploads");
+  // Fallback: write to /tmp (ephemeral on Vercel, but at least uploads succeed)
+  const baseDir = process.env.UPLOAD_DIR
+    ? resolve(process.env.UPLOAD_DIR)
+    : join("/tmp", "uploads");
   const absoluteDir = join(baseDir, folder);
   ensureDir(absoluteDir);
   const absolutePath = join(absoluteDir, safeName);
@@ -57,16 +64,20 @@ export async function saveFile(file: File, folder: string): Promise<StoredFile> 
 }
 
 export async function getFile(filePath: string): Promise<FileMetadata> {
-  if (isProd) {
-    const result = await get(filePath, { access: "public" });
-    if (!result || result.statusCode === 304) {
-      throw new Error("File not found in blob storage");
+  if (isProd && filePath.startsWith("https://")) {
+    try {
+      const result = await get(filePath, { access: "public" });
+      if (!result || result.statusCode === 304) {
+        throw new Error("File not found in blob storage");
+      }
+      return {
+        size: result.blob.size,
+        mimeType: result.blob.contentType,
+        downloadUrl: result.blob.downloadUrl,
+      };
+    } catch (err) {
+      console.error("[storage] Blob get failed", { err });
     }
-    return {
-      size: result.blob.size,
-      mimeType: result.blob.contentType,
-      downloadUrl: result.blob.downloadUrl,
-    };
   }
 
   if (!existsSync(filePath)) {
@@ -82,8 +93,12 @@ export async function getFile(filePath: string): Promise<FileMetadata> {
 }
 
 export async function deleteFile(filePath: string): Promise<void> {
-  if (isProd) {
-    await del(filePath);
+  if (isProd && filePath.startsWith("https://")) {
+    try {
+      await del(filePath);
+    } catch (err) {
+      console.error("[storage] Blob delete failed", { err });
+    }
   } else {
     if (existsSync(filePath)) {
       unlinkSync(filePath);
@@ -92,12 +107,20 @@ export async function deleteFile(filePath: string): Promise<void> {
 }
 
 export async function fileToBuffer(filePath: string): Promise<ArrayBuffer> {
-  if (isProd) {
-    const result = await get(filePath, { access: "public" });
-    if (!result || result.statusCode === 304) {
-      throw new Error("File not found in blob storage");
+  if (isProd && filePath.startsWith("https://")) {
+    try {
+      const result = await get(filePath, { access: "public" });
+      if (!result || result.statusCode === 304) {
+        throw new Error("File not found in blob storage");
+      }
+      return await new Response(result.stream).arrayBuffer();
+    } catch (err) {
+      console.error("[storage] Blob get failed, trying /tmp", { err });
     }
-    return await new Response(result.stream).arrayBuffer();
+  }
+
+  if (!existsSync(filePath)) {
+    throw new Error("File not found on disk");
   }
 
   return readFileSync(filePath).buffer;
