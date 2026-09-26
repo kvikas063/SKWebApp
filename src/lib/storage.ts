@@ -2,7 +2,10 @@ import { put, get, del } from "@vercel/blob";
 import { join, resolve } from "path";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync } from "fs";
 
-const isProd = process.env.NODE_ENV === "production";
+// Vercel sets VERCEL=1 and NODE_ENV=production, but we check VERCEL explicitly
+// because some deployments may not set NODE_ENV correctly.
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+const isProd = isVercel || process.env.NODE_ENV === "production";
 
 export interface StoredFile {
   url: string;
