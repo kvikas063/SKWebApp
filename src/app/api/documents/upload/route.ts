@@ -62,18 +62,26 @@ export async function POST(req: NextRequest) {
 
   const docType = type as DocumentType;
 
-  const stored = await saveFile(file, "documents");
+  try {
+    const stored = await saveFile(file, "documents");
 
-  const doc = await prisma.employeeDocument.create({
-    data: {
-      employeeId: session.user.employeeId,
-      type: docType,
-      fileName: file.name,
-      filePath: stored.url,
-      mimeType: file.type || null,
-      fileSize: file.size || null,
-    },
-  });
+    const doc = await prisma.employeeDocument.create({
+      data: {
+        employeeId: session.user.employeeId,
+        type: docType,
+        fileName: file.name,
+        filePath: stored.url,
+        mimeType: file.type || null,
+        fileSize: file.size || null,
+      },
+    });
 
-  return NextResponse.json(doc, { status: 201 });
+    return NextResponse.json(doc, { status: 201 });
+  } catch (err) {
+    console.error("[upload] failed to store document", { err, employeeId: session.user.employeeId });
+    return NextResponse.json(
+      { error: "Failed to store document. Please verify BLOB storage is configured." },
+      { status: 500 }
+    );
+  }
 }
