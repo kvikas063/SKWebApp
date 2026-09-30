@@ -1,31 +1,36 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import type { PoolConfig } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Neon's pooled endpoint (-pooler.<host>) and pgBouncer URLs already manage
-// connection multiplexing server-side. Prisma's own connection_limit would
-// just add a second layer of throttling — and a tight pool_timeout makes
-// queries queue, which on a saturated pooler shows up as multi-second stalls.
-// Only append pool params for plain (non-pooled) Postgres, i.e. local dev.
-function datasourceUrl(): string | undefined {
+function getPoolConfig(): PoolConfig {
   const url = process.env.DATABASE_URL;
-  if (!url) return undefined;
+  if (!url) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+  // Neon's pooled endpoint (-pooler.<host>), pgBouncer URLs, and Prisma
+  // Postgres connection strings already manage connection multiplexing.
+  // pg handles its own pool natively, so the Prisma engine's connection_limit
+  // query param no longer applies — cap max instead for local dev.
   const isPooled =
     url.includes("-pooler.") ||
     url.includes("pgbouncer=true") ||
     url.startsWith("prisma+postgres://") ||
     url.includes("pooled.db.prisma.io");
-  if (isPooled) return url;
+  if (isPooled) return { connectionString: url };
   // Local dev: cap the pool so one process can't exhaust the dev Postgres.
-  return url + (url.includes("?") ? "&" : "?") + "connection_limit=1&pool_timeout=10";
+  return { connectionString: url, max: 1, idleTimeoutMillis: 10000 };
 }
+
+const adapter = new PrismaPg(getPoolConfig());
 
 function createClient(): PrismaClient {
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    datasourceUrl: datasourceUrl(),
+    adapter,
   });
 }
 
