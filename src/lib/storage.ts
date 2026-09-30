@@ -33,24 +33,34 @@ export async function saveFile(file: File, folder: string): Promise<StoredFile> 
   const safeName = `${Date.now()}-${sanitizeFileName(file.name)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  if (isProd && process.env.BLOB_READ_WRITE_TOKEN) {
-    try {
-      const blobPath = `${folder}/${safeName}`;
-      const blob = await put(blobPath, buffer, {
-        access: "public",
-        contentType: file.type,
-      });
-      return {
-        url: blob.url,
-        size: file.size,
-        mimeType: file.type || "application/octet-stream",
-      };
-    } catch (err) {
-      console.error("[storage] Blob put failed, falling back to /tmp", { err });
+  // On Vercel the runtime filesystem is ephemeral and the function code
+  // directory (/var/task) is read-only. Vercel also injects UPLOAD_DIR as
+  // /var/task/uploads by default, which cannot be created. The only reliable
+  // storage on Vercel is Vercel Blob, so we require it there and never fall
+  // back to disk. If the token is missing, fail loudly with a clear message.
+  if (isVercel) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error(
+        "Document storage is not configured: BLOB_READ_WRITE_TOKEN is missing. " +
+          "On Vercel, document uploads require Vercel Blob. " +
+          "Add the BLOB_READ_WRITE_TOKEN environment variable (auto-provisioned by Vercel " +
+          "when @vercel/blob is installed)."
+      );
     }
+    const blobPath = `${folder}/${safeName}`;
+    const blob = await put(blobPath, buffer, {
+      access: "public",
+      contentType: file.type,
+    });
+    return {
+      url: blob.url,
+      size: file.size,
+      mimeType: file.type || "application/octet-stream",
+    };
   }
 
-  // Fallback: write to /tmp (ephemeral on Vercel, but at least uploads succeed)
+  // Local dev / self-hosted: fall back to disk. Use /tmp (always writable)
+  // rather than the project root, and ignore any Vercel-injected UPLOAD_DIR.
   const baseDir = process.env.UPLOAD_DIR
     ? resolve(process.env.UPLOAD_DIR)
     : join("/tmp", "uploads");
