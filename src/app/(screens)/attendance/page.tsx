@@ -1,35 +1,28 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { getAttendanceForMonth } from "@/lib/actions/attendance";
+import { getAttendancePage } from "@/lib/actions/attendance";
 import { requireAuth } from "@/lib/rbac";
 import { AttendanceActions } from "./attendance-actions";
 import { AttendanceTable } from "./attendance-table";
 import { Calendar, Clock, UserCheck, UserX } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
 
-export default async function AttendancePage() {
-  const user = await requireAuth();
+type SearchParams = Promise<{ page?: string; status?: string }>;
+
+export default async function AttendancePage({ searchParams }: { searchParams: SearchParams }) {
+  await requireAuth();
   const now = new Date();
-  
-  let employeeIds: string[] | undefined;
-  if (user.role === UserRole.MANAGER) {
-    const me = await prisma.employee.findFirst({ where: { userId: user.id } });
-    if (me) {
-      const reports = await prisma.employee.findMany({
-        where: { managerId: me.id, isActive: true },
-        select: { id: true },
-      });
-      employeeIds = reports.map((r) => r.id);
-    }
-  }
-  
-  const records = await getAttendanceForMonth(now.getFullYear(), now.getMonth() + 1, undefined, employeeIds);
+  const params = await searchParams;
 
-  const presentCount = records.filter((r) => r.status === "PRESENT").length;
-  const absentCount = records.filter((r) => r.status === "ABSENT" || r.status === "LOP").length;
-  const halfDayCount = records.filter((r) => r.status === "HALF_DAY").length;
+  const { data: records, page, limit, total, totalPages, summary, statusCounts } =
+    await getAttendancePage({
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      page: params.page,
+      status: params.status,
+    });
+
+  const isFiltered = !!params.status && params.status !== "ALL";
 
   return (
     <div className="space-y-6">
@@ -43,25 +36,25 @@ export default async function AttendancePage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Records"
-          value={records.length}
+          value={summary.totalRecords}
           icon={<Calendar className="h-5 w-5" />}
           accent="from-indigo-500 to-violet-500"
         />
         <StatCard
           title="Present"
-          value={presentCount}
+          value={summary.present}
           icon={<UserCheck className="h-5 w-5" />}
           accent="from-emerald-500 to-teal-500"
         />
         <StatCard
           title="Absent / LOP"
-          value={absentCount}
+          value={summary.absent}
           icon={<UserX className="h-5 w-5" />}
           accent="from-rose-500 to-pink-500"
         />
         <StatCard
           title="Half Days"
-          value={halfDayCount}
+          value={summary.halfDay}
           icon={<Clock className="h-5 w-5" />}
           accent="from-amber-500 to-orange-500"
         />
@@ -72,7 +65,15 @@ export default async function AttendancePage() {
           <CardTitle>Records</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <AttendanceTable records={records} />
+          <AttendanceTable
+            records={records}
+            total={total}
+            page={page}
+            pageSize={limit}
+            totalPages={totalPages}
+            statusCounts={statusCounts}
+            isFiltered={isFiltered}
+          />
         </CardContent>
       </Card>
     </div>

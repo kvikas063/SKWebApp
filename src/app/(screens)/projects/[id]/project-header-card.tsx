@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar, Users, Clock, MapPin, IndianRupee, ArrowLeft } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { formatBudget } from "../budget-utils";
+import { formatINRCompact } from "@/lib/money";
 import { ProjectActions } from "./project-actions";
 
 import type { ProjectWithRelations, EmployeeSummary } from "@/lib/types/projects";
@@ -120,7 +120,7 @@ export function ProjectHeaderCard({ project, employees }: { project: ProjectWith
           <IndianRupee className="h-5 w-5 text-emerald-500" />
           <div>
             <p className="text-xs text-muted-foreground">Budget</p>
-            <p className="text-sm font-semibold">{formatBudget(project.budgetPaise ?? 0)}</p>
+            <p className="text-sm font-semibold">{formatINRCompact(project.budgetPaise ?? 0)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-md border p-3">

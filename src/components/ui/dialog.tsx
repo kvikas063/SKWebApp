@@ -34,7 +34,16 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-2xl duration-200 sm:rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-2xl duration-200 sm:rounded-2xl",
+        // `grid-cols-1` is `minmax(0, 1fr)`. Without it the implicit column is
+        // `auto`, whose max is `max-content`, so a single long unbreakable
+        // child (a file name, a URL) grows the track past the dialog and the
+        // fields spill outside its border. Pinning the track to the container
+        // width is what makes `truncate` and `min-w-0` on children effective.
+        "grid-cols-1",
+        // Keep the panel inside the viewport on short or narrow screens
+        // instead of running flush to the edges or past the bottom.
+        "max-h-[calc(100dvh-2rem)] overflow-y-auto",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className
       )}

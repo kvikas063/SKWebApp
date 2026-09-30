@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { getPayRun } from "@/lib/actions/payroll";
+import { getPayRun, getPayRunBreakdown, getPayRunPayslipsPage } from "@/lib/actions/payroll";
 import { requireAdmin } from "@/lib/rbac";
-import { formatINR } from "@/lib/money";
+import { formatINRCompact } from "@/lib/money";
 import { getMonthName } from "@/lib/utils";
 import { PayRunActions } from "./payrun-actions";
 import { PrintSummaryDialog } from "./print-summary-dialog";
@@ -33,23 +33,22 @@ const statusVariant = (status: string) => {
 
 export default async function PayRunDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   await requireAdmin();
   const { id } = await params;
+  const { page: pageParam } = await searchParams;
+
   const payRun = await getPayRun(id);
   if (!payRun) notFound();
 
-  // Aggregate earnings & deductions across all payslips
-  const earningsAgg: Record<string, number> = {};
-  const deductionsAgg: Record<string, number> = {};
-  for (const slip of payRun.paySlips) {
-    const e = (slip.earningsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
-    const d = (slip.deductionsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
-    for (const item of e) earningsAgg[item.name] = (earningsAgg[item.name] ?? 0) + item.amountPaise;
-    for (const item of d) deductionsAgg[item.name] = (deductionsAgg[item.name] ?? 0) + item.amountPaise;
-  }
+  const [{ data: slips, page, limit, totalPages, total }, { earnings: earningsAgg, deductions: deductionsAgg }] =
+    await Promise.all([getPayRunPayslipsPage(id, { page: pageParam }), getPayRunBreakdown(id)]);
+
+  const slipCount = payRun._count.paySlips;
 
   return (
     <div className="space-y-6">
@@ -58,20 +57,19 @@ export default async function PayRunDetailPage({
       </Link>
       <PageHeader
         title={`${getMonthName(payRun.month)} ${payRun.year}`}
-        description={`Pay run for ${payRun.paySlips.length} employees`}
+        description={`Pay run for ${slipCount} employees`}
         icon={Banknote}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={statusVariant(payRun.status)} className="text-xs">
               {payRun.status}
             </Badge>
-            {payRun.status === "FINALIZED" && <PrintSummaryDialog payRun={payRun} />}
+            {payRun.status === "FINALIZED" && <PrintSummaryDialog payRunId={payRun.id} />}
             <PayRunActions
               payRunId={payRun.id}
               status={payRun.status}
               year={payRun.year}
               month={payRun.month}
-              paySlips={payRun.paySlips}
             />
           </div>
         }
@@ -80,25 +78,25 @@ export default async function PayRunDetailPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Gross"
-          value={formatINR(payRun.totalGrossPaise)}
+          value={formatINRCompact(payRun.totalGrossPaise)}
           icon={<IndianRupee className="h-5 w-5" />}
           accent="from-indigo-500 to-violet-500"
         />
         <StatCard
           title="Total Deductions"
-          value={formatINR(payRun.totalDeductionsPaise)}
+          value={formatINRCompact(payRun.totalDeductionsPaise)}
           icon={<TrendingDown className="h-5 w-5" />}
           accent="from-rose-500 to-pink-500"
         />
         <StatCard
           title="Net Payout"
-          value={formatINR(payRun.totalNetPaise)}
+          value={formatINRCompact(payRun.totalNetPaise)}
           icon={<Wallet className="h-5 w-5" />}
           accent="from-emerald-500 to-teal-500"
         />
         <StatCard
           title="Employees"
-          value={payRun.paySlips.length}
+          value={slipCount}
           icon={<UsersIcon className="h-5 w-5" />}
           accent="from-amber-500 to-orange-500"
         />
@@ -127,7 +125,7 @@ export default async function PayRunDetailPage({
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium">{name}</span>
                           <span className="font-semibold">
-                            {formatINR(paise)} <span className="text-xs text-muted-foreground">({pct}%)</span>
+                            {formatINRCompact(paise)} <span className="text-xs text-muted-foreground">({pct}%)</span>
                           </span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -166,7 +164,7 @@ export default async function PayRunDetailPage({
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium">{name}</span>
                           <span className="font-semibold">
-                            {formatINR(paise)} <span className="text-xs text-muted-foreground">({pct}%)</span>
+                            {formatINRCompact(paise)} <span className="text-xs text-muted-foreground">({pct}%)</span>
                           </span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -192,10 +190,16 @@ export default async function PayRunDetailPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {payRun.paySlips.length === 0 ? (
+          {slipCount === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">No payslips in this run.</p>
           ) : (
-            <PayslipsTable slips={payRun.paySlips} />
+            <PayslipsTable
+              slips={slips}
+              total={total}
+              page={page}
+              pageSize={limit}
+              totalPages={totalPages}
+            />
           )}
         </CardContent>
       </Card>

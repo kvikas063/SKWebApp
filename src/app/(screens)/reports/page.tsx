@@ -4,7 +4,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
-import { formatINR } from "@/lib/money";
+import { formatINRCompact } from "@/lib/money";
 import { getMonthName } from "@/lib/utils";
 import { BarChart, DonutChart, LineChart, type DonutSlice } from "@/components/ui/charts";
 import {
@@ -242,9 +242,9 @@ export default async function ReportsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Active Headcount" value={employeeCount} icon={<Users className="h-5 w-5" />} accent="from-indigo-500 to-violet-500" />
-        <StatCard title="YTD Gross" value={formatINR(ytdGross)} icon={<TrendingUp className="h-5 w-5" />} accent="from-cyan-500 to-blue-500" />
-        <StatCard title="YTD Deductions" value={formatINR(ytdDeductions)} icon={<TrendingUp className="h-5 w-5" />} accent="from-rose-500 to-pink-500" />
-        <StatCard title="Avg Monthly Net" value={formatINR(avgNet)} icon={<Wallet className="h-5 w-5" />} accent="from-emerald-500 to-teal-500" />
+        <StatCard title="YTD Gross" value={formatINRCompact(ytdGross)} icon={<TrendingUp className="h-5 w-5" />} accent="from-cyan-500 to-blue-500" />
+        <StatCard title="YTD Deductions" value={formatINRCompact(ytdDeductions)} icon={<TrendingUp className="h-5 w-5" />} accent="from-rose-500 to-pink-500" />
+        <StatCard title="Avg Monthly Net" value={formatINRCompact(avgNet)} icon={<Wallet className="h-5 w-5" />} accent="from-emerald-500 to-teal-500" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -423,14 +423,14 @@ export default async function ReportsPage() {
                           {run.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">{formatINR(run.totalGrossPaise)}</TableCell>
+                      <TableCell className="text-right">{formatINRCompact(run.totalGrossPaise)}</TableCell>
                       <TableCell className="text-right text-rose-600 dark:text-rose-400">
-                        - {formatINR(run.totalDeductionsPaise)}
+                        - {formatINRCompact(run.totalDeductionsPaise)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
-                        {formatINR(run.totalNetPaise)}
+                        {formatINRCompact(run.totalNetPaise)}
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatINR(avg)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatINRCompact(avg)}</TableCell>
                     </TableRow>
                   );
                 })}

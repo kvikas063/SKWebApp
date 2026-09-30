@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAuth } from "@/lib/rbac";
-import { getEmployeeDocuments } from "@/lib/actions/documents";
+import { getEmployeeDocumentsPage } from "@/lib/actions/documents";
 import { FileText } from "lucide-react";
 import { DocumentsList } from "./documents-list";
 import { UploadDocumentButton } from "./upload-document-button";
 
-export default async function MyDocumentsPage() {
+type SearchParams = Promise<{ page?: string }>;
+
+export default async function MyDocumentsPage({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireAuth();
   if (user.role !== "EMPLOYEE") {
     redirect("/dashboard");
@@ -16,18 +18,27 @@ export default async function MyDocumentsPage() {
     redirect("/dashboard");
   }
 
-  const documents = await getEmployeeDocuments(employeeId);
+  const params = await searchParams;
+  const { data: documents, page, limit, total, totalPages } = await getEmployeeDocumentsPage(employeeId, {
+    page: params.page,
+  });
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="My Documents"
-        description={`${documents.length} document${documents.length === 1 ? "" : "s"} shared by the company`}
+        description={`${total} document${total === 1 ? "" : "s"} shared by the company`}
         icon={FileText}
         actions={<UploadDocumentButton />}
       />
 
-      <DocumentsList documents={documents} />
+      <DocumentsList
+        documents={documents}
+        total={total}
+        page={page}
+        pageSize={limit}
+        totalPages={totalPages}
+      />
     </div>
   );
 }

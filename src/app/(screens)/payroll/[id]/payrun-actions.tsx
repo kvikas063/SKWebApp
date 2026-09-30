@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { transitionPayRun, cancelPayRun, deletePayRun } from "@/lib/actions/payroll";
+import { transitionPayRun, cancelPayRun, deletePayRun, getPayRunSlips } from "@/lib/actions/payroll";
 import { generateBankCSV, generatePFChallan } from "@/lib/services/payroll-exports";
 import { useRouter } from "next/navigation";
 import type { PayRunStatus } from "@prisma/client";
@@ -24,20 +24,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { FilePreviewDialog, type PreviewData } from "@/components/ui/file-preview-dialog";
-
-type PaySlip = {
-  id: string;
-  employee: {
-    firstName: string;
-    lastName: string;
-    bankAccountNo: string | null;
-    bankIfsc: string | null;
-    uan: string | null;
-  };
-  netPaise: number;
-  grossPaise: number;
-  statutoryJson: unknown;
-};
 
 const nextLabel: Record<string, string> = {
   DRAFT: "Start Review",
@@ -56,13 +42,11 @@ export function PayRunActions({
   status,
   year,
   month,
-  paySlips,
 }: {
   payRunId: string;
   status: PayRunStatus;
   year: number;
   month: number;
-  paySlips: PaySlip[];
 }) {
   const [loading, setLoading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -106,7 +90,8 @@ export function PayRunActions({
 
   const monthName = new Date(2000, month - 1, 1).toLocaleString("en-IN", { month: "long" });
 
-  const bankPreviewData = useMemo<PreviewData>(() => {
+  const fetchBankPreview = useCallback(async (): Promise<PreviewData> => {
+    const paySlips = await getPayRunSlips(payRunId);
     const valid = paySlips.filter((p) => p.employee.bankAccountNo);
     const totalNet = valid.reduce((s, p) => s + p.netPaise, 0);
     return {
@@ -131,9 +116,10 @@ export function PayRunActions({
         narration: "Salary",
       })),
     };
-  }, [paySlips, monthName, year]);
+  }, [payRunId, monthName, year]);
 
-  const pfPreviewData = useMemo<PreviewData>(() => {
+  const fetchPfPreview = useCallback(async (): Promise<PreviewData> => {
+    const paySlips = await getPayRunSlips(payRunId);
     const totalEmp = paySlips.reduce((s, p) => {
       const stat = p.statutoryJson as { pfEmployeePaise?: number; pfEmployerPaise?: number } | null;
       return s + (stat?.pfEmployeePaise ?? 0);
@@ -171,7 +157,7 @@ export function PayRunActions({
         };
       }),
     };
-  }, [paySlips]);
+  }, [payRunId]);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -259,9 +245,9 @@ export function PayRunActions({
             triggerLabel="Bank CSV"
             triggerVariant="default"
             icon={<FileSpreadsheet className="h-4 w-4" />}
-            fetchPreview={async () => bankPreviewData}
+            fetchPreview={fetchBankPreview}
             buildDownload={async () => ({
-              content: generateBankCSV(paySlips),
+              content: generateBankCSV(await getPayRunSlips(payRunId)),
               filename: `bank-payment-${monthName}-${year}.csv`,
               mime: "text/csv;charset=utf-8;",
             })}
@@ -275,9 +261,9 @@ export function PayRunActions({
             triggerLabel="PF Challan"
             triggerVariant="default"
             icon={<FileSpreadsheet className="h-4 w-4" />}
-            fetchPreview={async () => pfPreviewData}
+            fetchPreview={fetchPfPreview}
             buildDownload={async () => ({
-              content: generatePFChallan(paySlips),
+              content: generatePFChallan(await getPayRunSlips(payRunId)),
               filename: `pf-challan-${monthName}-${year}.csv`,
               mime: "text/csv;charset=utf-8;",
             })}

@@ -1,12 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { requireAuth } from "@/lib/rbac";
-import { getLeaveBalances, getLeaveRequests } from "@/lib/actions/leave";
-import { formatDate } from "@/lib/utils";
+import { getLeaveBalances, getMyLeaveRequestsPage } from "@/lib/actions/leave";
+import { MyLeaveRequestList } from "./my-leave-request-list";
 import { LeaveRequestForm } from "./leave-request-form";
-import { CalendarDays, Palmtree, Heart, Briefcase, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CalendarDays, Palmtree, Heart, Briefcase, FileText } from "lucide-react";
 
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   CASUAL: Palmtree,
@@ -14,21 +13,9 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   SICK: Heart,
 };
 
-const statusVariants: Record<string, "success" | "destructive" | "warning" | "secondary"> = {
-  APPROVED: "success",
-  REJECTED: "destructive",
-  PENDING: "warning",
-  CANCELLED: "secondary",
-};
+type SearchParams = Promise<{ page?: string }>;
 
-const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  APPROVED: CheckCircle2,
-  REJECTED: XCircle,
-  PENDING: Clock,
-  CANCELLED: XCircle,
-};
-
-export default async function MyLeavePage() {
+export default async function MyLeavePage({ searchParams }: { searchParams: SearchParams }) {
   const user = await requireAuth();
   if (!user.employeeId) {
     return (
@@ -43,12 +30,13 @@ export default async function MyLeavePage() {
     );
   }
 
-  const [balances, requests] = await Promise.all([
+  const params = await searchParams;
+  // Scoped in the query: this used to pull every request in the company and
+  // then discard all but the current employee's.
+  const [balances, { data: myRequests, page, limit, total, totalPages }] = await Promise.all([
     getLeaveBalances(user.employeeId),
-    getLeaveRequests(),
+    getMyLeaveRequestsPage({ employeeId: user.employeeId, page: params.page }),
   ]);
-
-  const myRequests = requests.filter((r) => r.employeeId === user.employeeId);
 
   return (
     <div className="space-y-6">
@@ -98,29 +86,13 @@ export default async function MyLeavePage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
             <h3 className="font-semibold">My Requests</h3>
           </div>
-          {myRequests.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No leave requests yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {myRequests.map((req) => {
-                const StatusIcon = statusIcons[req.status] ?? Clock;
-                return (
-                  <div key={req.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium">{req.leaveType} — {req.days} day(s)</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(req.startDate)} – {formatDate(req.endDate)}
-                      </p>
-                    </div>
-                    <Badge variant={statusVariants[req.status]}>
-                      <StatusIcon className="mr-1 h-3 w-3" />
-                      {req.status}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <MyLeaveRequestList
+            requests={myRequests}
+            total={total}
+            page={page}
+            pageSize={limit}
+            totalPages={totalPages}
+          />
         </CardContent>
       </Card>
     </div>

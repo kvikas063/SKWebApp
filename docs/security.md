@@ -9,7 +9,7 @@ Login sessions are short-lived by design.
 - **JWT session strategy** with a hard `maxAge` of **24 hours** (`24 * 60 * 60` seconds).
 - Configured in `src/auth.ts:27` via `session: { strategy: "jwt", maxAge: 24 * 60 * 60 }`.
 - The same value is mirrored in the `SESSION_MAX_AGE` environment variable (`86400`).
-- After expiry, the user is redirected to `/login` automatically because the middleware no longer recognizes the session cookie.
+- After expiry, the user is redirected to `/login` automatically because the proxy no longer recognizes the session cookie.
 
 > To change the expiry, update the `maxAge` in `src/auth.ts` and the `SESSION_MAX_AGE` env var together.
 
@@ -22,7 +22,7 @@ Login sessions are short-lived by design.
 
 ## 3. HTTPS / SSL Redirect
 
-- In production, the middleware (`src/middleware.ts`) redirects `http://` → `https://` with a `308` status.
+- In production, the proxy (`src/proxy.ts`) redirects `http://` → `https://` with a `308` status.
 - The redirect only fires when `NODE_ENV === "production"` so local development keeps working.
 
 ### Provisioning an SSL certificate
@@ -44,7 +44,7 @@ Login sessions are short-lived by design.
    sudo certbot --nginx -d hrms.yourcompany.com
    ```
 2. Ensure the upstream app runs on `http://localhost:3000` and nginx terminates TLS.
-3. Set `NODE_ENV=production` so the middleware enforces the HTTPS redirect.
+3. Set `NODE_ENV=production` so the proxy enforces the HTTPS redirect.
 
 **Local development**
 - Run with `npm run dev` over plain HTTP. The redirect is skipped because `NODE_ENV` is `development`.

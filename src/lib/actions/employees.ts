@@ -5,8 +5,10 @@ import { requireAuth, requireAdmin } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { EmployeeType, TaxRegime, UserRole, Prisma } from "@prisma/client";
+import { EmployeeType, TaxRegime, UserRole } from "@prisma/client";
 import { rupeesToPaise } from "@/lib/money";
+import { listEmployees } from "@/lib/services/employees";
+import type { GetEmployeesParams, PaginatedEmployees } from "@/lib/types/employees";
 
 const employeeSchema = z.object({
   employeeCode: z.string().min(1),
@@ -29,29 +31,12 @@ const employeeSchema = z.object({
   password: z.string().min(6).optional(),
 });
 
-export async function getEmployees() {
+// A "use server" module may only export async functions, so the pagination
+// helpers and limits live in `listEmployees`, which this action and
+// `GET /api/employees` both call.
+export async function getEmployees(params: GetEmployeesParams = {}): Promise<PaginatedEmployees> {
   const user = await requireAuth();
-  const company = await prisma.company.findFirst();
-  if (!company) return [];
-
-  const where: Prisma.EmployeeWhereInput = { companyId: company.id, isActive: true };
-  if (user.role === "MANAGER") {
-    const me = await prisma.employee.findFirst({ where: { userId: user.id } });
-    if (me) {
-      where.managerId = me.id;
-    } else {
-      return [];
-    }
-  }
-
-  return prisma.employee.findMany({
-    where,
-    include: {
-      salaryComponents: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-      user: { select: { id: true, email: true, role: true } },
-    },
-    orderBy: { employeeCode: "asc" },
-  });
+  return listEmployees(user, params);
 }
 
 export async function getEmployeeByCode(employeeCode: string) {

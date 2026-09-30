@@ -1,8 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { retryFailedEmail } from "@/lib/services/email";
 import { requireAdmin } from "@/lib/rbac";
-import { listEmailLogs, retryFailedEmail } from "@/lib/services/email";
+
+import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { Prisma, EmailStatus } from "@prisma/client";
 
 export async function getEmailLogStats(companyId: string) {
   const [total, sent, failed, queued] = await Promise.all([
@@ -14,8 +17,43 @@ export async function getEmailLogStats(companyId: string) {
   return { total, sent, failed, queued };
 }
 
-export async function getEmailLogs(companyId: string, status?: string) {
-  return listEmailLogs(companyId, { status, take: 200 });
+/**
+ * One page of email logs. Replaces the old fixed `take: 200` window, which
+ * silently truncated anything older.
+ */
+export async function getEmailLogsPage(
+  companyId: string,
+  params: {
+    status?: string;
+    page?: number | string;
+    limit?: number | string;
+    offset?: number | string;
+  } = {}
+) {
+  await requireAdmin();
+  const paging = resolvePaging(params);
+
+  const status = params.status?.trim();
+  const where: Prisma.EmailLogWhereInput = {
+    companyId,
+    ...(status && status !== "ALL" ? { status: status as EmailStatus } : {}),
+  };
+
+  const findPage = (p: typeof paging) =>
+    prisma.emailLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total] = await Promise.all([
+    findPage(paging),
+    prisma.emailLog.count({ where }),
+  ]);
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+  return { data: settled.data, ...buildPageMeta({ ...paging, page: settled.page }, total) };
 }
 
 export async function retryEmail(logId: string) {

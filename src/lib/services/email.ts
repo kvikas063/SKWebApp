@@ -259,14 +259,3 @@ export async function retryFailedEmail(logId: string): Promise<{ ok: boolean }> 
   });
   return { ok: result.ok };
 }
-
-export async function listEmailLogs(companyId: string, opts?: { take?: number; status?: string }) {
-  return prisma.emailLog.findMany({
-    where: {
-      companyId,
-      ...(opts?.status ? { status: opts.status as never } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: opts?.take ?? 100,
-  });
-}

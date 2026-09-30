@@ -78,7 +78,7 @@ The codebase follows a **layered (onion) architecture** with clear separation of
 
 ```
  ┌────────────────────────────────────────────────────┐
- │  1. Edge Middleware          (src/middleware.ts)    │
+ │  1. Edge Proxy               (src/proxy.ts)         │
  │  2. Presentation / Routes    (src/app/)             │
  │  3. Components               (src/components/)      │
  │  4. Server Actions (data)    (src/lib/actions/)     │
@@ -88,12 +88,12 @@ The codebase follows a **layered (onion) architecture** with clear separation of
  └────────────────────────────────────────────────────┘
 ```
 
-### Layer 1 — Edge Middleware (`src/middleware.ts`)
+### Layer 1 — Edge Proxy (`src/proxy.ts`)
 Runs on the **Vercel Edge Runtime** before every request. Responsibilities:
 - **HTTPS enforcement**: redirects `http://` → `https://` (308) in production.
 - **Public-path allowlist**: `/login`, `/api/auth`, `/privacy`, `/terms`, `/support` are accessible without a session.
 - **Auth gating**: inspects the `authjs.session-token` cookie; redirects unauthenticated users to `/login?callbackUrl=...`; redirects authenticated users away from `/login`.
-- **No JWT decoding** in the middleware (keeps it lightweight and avoids needing `AUTH_SECRET` at the edge).
+- **No JWT decoding** in the proxy (keeps it lightweight and avoids needing `AUTH_SECRET` at the edge).
 
 ### Layer 2 — Presentation & Routing (`src/app/`)
 Built on the **Next.js App Router**. Server Components render pages by default; client components are opt-in via `"use client"`.
@@ -155,18 +155,17 @@ src/components/
 │   ├── table.tsx, pagination.tsx, badge.tsx, avatar.tsx
 │   ├── charts.tsx, stat-card.tsx, page-header.tsx
 │   ├── date-input.tsx, phone-input.tsx, file-preview-dialog.tsx
-│   ├── toaster.tsx, progress.tsx, separator.tsx, tabs.tsx, textarea.tsx
+│   ├── toaster.tsx, progress.tsx, tabs.tsx, textarea.tsx
 │   └── index.ts (barrel, if present)
 ├── layout/                  # App-level layout components (client)
 │   ├── app-shell.tsx        # Main layout shell (server: requires auth, fetches user/company)
 │   ├── sidebar.tsx          # Role-based navigation + theme toggle + user menu (client)
 │   ├── footer.tsx           # Company footer
 │   └── notification-bell.tsx # Real-time-ish notification dropdown (client)
-├── dashboard/               # Dashboard-specific widgets (apply-leave-card, holidays-widget, quick-punch)
+├── dashboard/               # Dashboard-specific widgets (apply-leave-card, quick-punch)
 ├── documents/               # Document preview dialog
 ├── payslip/                 # Payslip download button
-├── theme-provider.tsx       # next-themes provider wrapper
-├── theme-toggle.tsx         # Light/dark toggle
+├── theme-provider.tsx       # next-themes provider wrapper (toggle lives in sidebar.tsx)
 ├── auth-provider.tsx        # next-auth SessionProvider wrapper
 ├── page-loading-bar.tsx     # Top loading bar (client)
 └── hydration-reporter.tsx   # Hydration error reporter (dev)
@@ -341,7 +340,7 @@ SKWebApp-GitRepo/
 │   └── clean-db.ts               # Dev DB reset script
 │
 ├── src/
-│   ├── middleware.ts             # Edge middleware (HTTPS redirect, auth guard)
+│   ├── proxy.ts                  # Edge proxy (HTTPS redirect, auth guard)
 │   ├── auth.ts                   # NextAuth configuration
 │   │
 │   ├── app/                      # App Router (pages, layouts, API routes)
@@ -360,7 +359,7 @@ SKWebApp-GitRepo/
 │   └── lib/                      # Core library & data layer
 │       ├── actions/              # Server Actions (RBAC-guarded, Prisma writes)
 │       ├── services/             # Domain services (payroll engine, email, PDFs)
-│       ├── hooks/                # Client hooks (use-toast, use-navigation-loading)
+│       ├── hooks/                # Client hooks (use-toast)
 │       ├── prisma.ts             # Prisma 7 client singleton — uses PrismaPg adapter (pooled vs. local pool config)
 │       ├── rbac.ts               # Auth + role guards
 │       ├── audit.ts              # Audit logging utility
@@ -387,7 +386,7 @@ SKWebApp-GitRepo/
 | **Configurable statutory rates** | PF/ESI/PT/TDS rates come from `StatutoryConfig`, not hardcoded |
 | **Pay-run state machine** | Explicit `VALID_TRANSITIONS` table in `actions/payroll.ts` enforces valid workflow (DRAFT → REVIEWING → LOCKED → FINALIZED) |
 | **Append-only audit log** | `AuditLog` model captures before/after JSON on all mutations |
-| **Edge middleware auth check** | Cookie-only check (no JWT decode) keeps the edge function tiny and fast |
+| **Edge proxy auth check** | Cookie-only check (no JWT decode) keeps the edge function tiny and fast |
 | **Blob storage with disk fallback** | `@vercel/blob` in prod, local `/tmp` in dev — single codebase, both environments work |
 | **Prisma 7 driver adapter** | `PrismaPg` (`@prisma/adapter-pg`) manages the Postgres connection pool; pooled URLs skip client-side pool config |
 | **Global Prisma client reuse** | `globalThis.prisma` prevents connection pool exhaustion during hot-reload in dev |

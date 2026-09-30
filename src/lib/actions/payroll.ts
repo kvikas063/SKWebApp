@@ -10,6 +10,7 @@ import { formatINR } from "@/lib/money";
 import { getMonthName } from "@/lib/utils";
 import { PayRunStatus } from "@prisma/client";
 import { fanoutNotifications } from "./notifications";
+import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
 
 const VALID_TRANSITIONS: Record<PayRunStatus, PayRunStatus[]> = {
   DRAFT: ["REVIEWING", "CANCELLED"],
@@ -35,7 +36,88 @@ export async function getPayRuns() {
   });
 }
 
+/**
+ * Run header only. Payslips are deliberately excluded: a finalized run can hold
+ * thousands of them, and shipping every row to the page would defeat the
+ * paged payslips table. Use `getPayRunPayslipsPage` for the table,
+ * `getPayRunSlips` for the on-demand print/export flows, and
+ * `getPayRunBreakdown` for the aggregate cards.
+ */
 export async function getPayRun(id: string) {
+  await requireAdmin();
+  return prisma.payRun.findUnique({
+    where: { id },
+    include: {
+      company: true,
+      _count: { select: { paySlips: true } },
+    },
+  });
+}
+
+/** One page of payslips for the run detail table. */
+export async function getPayRunPayslipsPage(
+  payRunId: string,
+  params: { page?: number | string; limit?: number | string; offset?: number | string } = {}
+) {
+  await requireAdmin();
+  const paging = resolvePaging(params);
+
+  const findPage = (p: typeof paging) =>
+    prisma.paySlip.findMany({
+      where: { payRunId },
+      select: {
+        id: true,
+        paidDays: true,
+        lopDays: true,
+        grossPaise: true,
+        totalDeductionsPaise: true,
+        netPaise: true,
+        employee: { select: { employeeCode: true, firstName: true, lastName: true } },
+      },
+      orderBy: { employee: { employeeCode: "asc" } },
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total] = await Promise.all([
+    findPage(paging),
+    prisma.paySlip.count({ where: { payRunId } }),
+  ]);
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+  return { data: settled.data, ...buildPageMeta({ ...paging, page: settled.page }, total) };
+}
+
+/**
+ * Every payslip in the run, for the print summary and the bank CSV / PF
+ * challan exports. Callers should fetch this on demand rather than on page
+ * load - see the note on `getPayRun`.
+ */
+export async function getPayRunSlips(payRunId: string) {
+  await requireAdmin();
+  return prisma.paySlip.findMany({
+    where: { payRunId },
+    include: {
+      employee: {
+        select: {
+          firstName: true,
+          lastName: true,
+          employeeCode: true,
+          department: true,
+          designation: true,
+          pan: true,
+          bankAccountNo: true,
+          bankIfsc: true,
+          uan: true,
+        },
+      },
+    },
+  });
+}
+
+/** Full run including every payslip - for the on-demand print summary only. */
+export async function getPayRunWithSlips(id: string) {
+  await requireAdmin();
   return prisma.payRun.findUnique({
     where: { id },
     include: {
@@ -59,6 +141,29 @@ export async function getPayRun(id: string) {
       },
     },
   });
+}
+
+/**
+ * Earnings and deductions rolled up by line item across the whole run. Reads
+ * only the two JSON columns, and the result stays on the server so it never
+ * reaches the client payload.
+ */
+export async function getPayRunBreakdown(payRunId: string) {
+  await requireAdmin();
+  const rows = await prisma.paySlip.findMany({
+    where: { payRunId },
+    select: { earningsJson: true, deductionsJson: true },
+  });
+
+  const earnings: Record<string, number> = {};
+  const deductions: Record<string, number> = {};
+  for (const row of rows) {
+    const e = (row.earningsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
+    const d = (row.deductionsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
+    for (const item of e) earnings[item.name] = (earnings[item.name] ?? 0) + item.amountPaise;
+    for (const item of d) deductions[item.name] = (deductions[item.name] ?? 0) + item.amountPaise;
+  }
+  return { earnings, deductions };
 }
 
 export async function openPayRun(year: number, month: number) {

@@ -7,7 +7,7 @@ import { Building2, Calendar, TrendingUp, FolderKanban, Wallet } from "lucide-re
 import { ProjectCard } from "./project-card";
 import { ProjectFilter } from "./project-filter";
 import { NewProjectPopup } from "./new-project-popup";
-import { formatBudget } from "./budget-utils";
+import { formatINRCompact } from "@/lib/money";
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   await requireAuth();
@@ -35,7 +35,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         <StatCard title="Planning" value={planning} icon={<Calendar className="h-5 w-5" />} />
         <StatCard title="In Progress" value={inProgress} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard title="Completed" value={completed} icon={<Building2 className="h-5 w-5" />} />
-        <StatCard title="Total Budget" value={formatBudget(totalBudget)} icon={<Wallet className="h-5 w-5" />} />
+        <StatCard title="Total Budget" value={formatINRCompact(totalBudget)} icon={<Wallet className="h-5 w-5" />} />
       </div>
 
       <ProjectFilter />

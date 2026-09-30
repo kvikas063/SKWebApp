@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { formatDateTime } from "@/lib/utils";
-import { Shield, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Shield } from "lucide-react";
 
 type Log = {
   id: string;
@@ -92,33 +93,46 @@ function formatAuditMessage(action: string, entity: string): string {
   return template.replace("{entity}", humanizeEntity(entity).toLowerCase());
 }
 
-const PAGE_SIZE = 10;
+type ActionFilter = { action: string; count: number };
 
-export function AuditLogTable({ logs }: { logs: Log[] }) {
-  const [page, setPage] = useState(1);
-  const [actionFilter, setActionFilter] = useState<string>("ALL");
+export function AuditLogTable({
+  logs,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  actionCounts,
+}: {
+  logs: Log[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  actionCounts: ActionFilter[];
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
-  const filtered = useMemo(
-    () => (actionFilter === "ALL" ? logs : logs.filter((l) => l.action === actionFilter)),
-    [logs, actionFilter]
-  );
-  const filteredTotalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const action = searchParams.get("action") ?? "ALL";
+  const totalAll = actionCounts.reduce((sum, a) => sum + a.count, 0);
+  const isFiltered = action !== "ALL";
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (page > filteredTotalPages) setPage(1);
-  }, [page, filteredTotalPages]);
-
-  const paged = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
-
-  function goTo(p: number) {
-    setPage(Math.min(Math.max(1, p), filteredTotalPages));
+  // Filtering and paging both happen in the query, so both live in the URL.
+  function navigate(updates: Record<string, string | null>, { resetPage = true } = {}) {
+    const next = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "") next.delete(key);
+      else next.set(key, value);
+    }
+    // A deep page number can land past the end of a narrower result set.
+    if (resetPage) next.delete("page");
+    const qs = next.toString();
+    startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
   }
 
-  if (logs.length === 0) {
+  if (totalAll === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -134,30 +148,27 @@ export function AuditLogTable({ logs }: { logs: Log[] }) {
     <>
       <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
         <select
-          value={actionFilter}
-          onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
+          value={action}
+          onChange={(e) => navigate({ action: e.target.value === "ALL" ? null : e.target.value })}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="ALL">All actions ({logs.length})</option>
-          {Array.from(new Set(logs.map((l) => l.action))).sort().map((a) => {
-            const count = logs.filter((l) => l.action === a).length;
-            return (
-              <option key={a} value={a}>
-                {a} ({count})
-              </option>
-            );
-          })}
+          <option value="ALL">All actions ({totalAll})</option>
+          {actionCounts.map((a) => (
+            <option key={a.action} value={a.action}>
+              {a.action} ({a.count})
+            </option>
+          ))}
         </select>
         <div className="text-xs text-muted-foreground sm:ml-auto">
-          <span className="font-semibold text-foreground">{filtered.length}</span> of {logs.length}
-          {actionFilter !== "ALL" && <span> · filtered</span>}
+          <span className="font-semibold text-foreground">{total}</span> entr{total === 1 ? "y" : "ies"}
+          {isFiltered && <span> · filtered</span>}
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {total === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
           <p className="font-medium">No entries match this action</p>
-          <Button variant="outline" size="sm" onClick={() => { setActionFilter("ALL"); setPage(1); }}>
+          <Button variant="outline" size="sm" onClick={() => navigate({ action: null })}>
             Clear filter
           </Button>
         </div>
@@ -173,7 +184,7 @@ export function AuditLogTable({ logs }: { logs: Log[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((log) => {
+              {logs.map((log) => {
                 const c = actionColor(log.action);
                 return (
                   <TableRow key={log.id}>
@@ -202,59 +213,13 @@ export function AuditLogTable({ logs }: { logs: Log[] }) {
             </TableBody>
           </Table>
 
-          {filteredTotalPages > 1 && (
-            <div className="flex flex-col items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:flex-row">
-              <p className="text-xs text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{(page - 1) * PAGE_SIZE + 1}</span>–
-                <span className="font-semibold text-foreground">{Math.min(page * PAGE_SIZE, filtered.length)}</span> of{" "}
-                <span className="font-semibold text-foreground">{filtered.length}</span>
-              </p>
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goTo(1)} disabled={page === 1} aria-label="First page">
-                  <ChevronsLeft className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goTo(page - 1)} disabled={page === 1} aria-label="Previous page">
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                {Array.from({ length: filteredTotalPages }, (_, i) => i + 1)
-                  .filter((p) => {
-                    if (filteredTotalPages <= 7) return true;
-                    if (p === 1 || p === filteredTotalPages) return true;
-                    if (Math.abs(p - page) <= 1) return true;
-                    return false;
-                  })
-                  .reduce<Array<number | "ellipsis">>((acc, p, i, arr) => {
-                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("ellipsis");
-                    acc.push(p);
-                    return acc;
-                  }, [])
-                  .map((item, i) =>
-                    typeof item === "number" ? (
-                      <Button
-                        key={item}
-                        variant={item === page ? "default" : "outline"}
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 text-xs font-semibold tabular-nums",
-                          item === page && "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm"
-                        )}
-                        onClick={() => goTo(item)}
-                      >
-                        {item}
-                      </Button>
-                    ) : (
-                      <span key={`e-${i}`} className="px-1 text-xs text-muted-foreground">…</span>
-                    )
-                  )}
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goTo(page + 1)} disabled={page === filteredTotalPages} aria-label="Next page">
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => goTo(filteredTotalPages)} disabled={page === filteredTotalPages} aria-label="Last page">
-                  <ChevronsRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={total}
+            pageSize={pageSize}
+            onPageChange={(p) => navigate({ page: p === 1 ? null : String(p) }, { resetPage: false })}
+          />
         </>
       )}
     </>

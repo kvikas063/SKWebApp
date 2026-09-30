@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { getPayRuns } from "@/lib/actions/payroll";
 import { requireAdmin } from "@/lib/rbac";
-import { formatINR } from "@/lib/money";
+import { formatINRCompact } from "@/lib/money";
 import { getMonthName } from "@/lib/utils";
 import { PayrollActions } from "./payroll-actions";
 import { Banknote, Users, TrendingUp, Wallet, Calendar as CalendarIcon, Filter } from "lucide-react";
@@ -46,8 +46,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Pay Runs" value={payRuns.length} icon={<CalendarIcon className="h-5 w-5" />} accent="from-indigo-500 to-violet-500" />
-        <StatCard title="Total Gross" value={formatINR(totalGross)} icon={<TrendingUp className="h-5 w-5" />} accent="from-cyan-500 to-blue-500" />
-        <StatCard title="Total Net" value={formatINR(totalNet)} icon={<Wallet className="h-5 w-5" />} accent="from-emerald-500 to-teal-500" />
+        <StatCard title="Total Gross" value={formatINRCompact(totalGross)} icon={<TrendingUp className="h-5 w-5" />} accent="from-cyan-500 to-blue-500" />
+        <StatCard title="Total Net" value={formatINRCompact(totalNet)} icon={<Wallet className="h-5 w-5" />} accent="from-emerald-500 to-teal-500" />
         <StatCard title="Payslips Issued" value={totalEmployees} icon={<Users className="h-5 w-5" />} accent="from-amber-500 to-orange-500" />
       </div>
 
@@ -137,7 +137,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
               <div className="flex items-center gap-4">
                 <Badge variant={statusVariant(run.status)}>{run.status}</Badge>
                 <div className="text-right">
-                  <p className="font-bold">{formatINR(run.totalNetPaise)}</p>
+                  <p className="font-bold">{formatINRCompact(run.totalNetPaise)}</p>
                   <p className="text-[10px] text-muted-foreground">net payout</p>
                 </div>
               </div>
