@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, Loader2, FileText } from "lucide-react";
+import { getPayRunWithSlips } from "@/lib/actions/payroll";
 
 type PaySlip = {
   id: string;
@@ -40,33 +41,36 @@ function monthName(m: number) {
   return new Date(2000, m - 1, 1).toLocaleString("en-IN", { month: "long" });
 }
 
-export function PrintSummaryDialog({ payRun }: { payRun: PayRunLike }) {
+export function PrintSummaryDialog({ payRunId }: { payRunId: string }) {
   const [open, setOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
+  // The summary needs every payslip in the run, which is far too much to ship
+  // to the client on page load, so it is pulled the first time the dialog opens.
+  const [payRun, setPayRun] = useState<PayRunLike | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const loading = open && !payRun && !error;
 
-  const earningsAgg: Record<string, number> = {};
-  const deductionsAgg: Record<string, number> = {};
-  for (const slip of payRun.paySlips) {
-    const e = (slip.earningsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
-    const d = (slip.deductionsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
-    for (const item of e) earningsAgg[item.name] = (earningsAgg[item.name] ?? 0) + item.amountPaise;
-    for (const item of d) deductionsAgg[item.name] = (deductionsAgg[item.name] ?? 0) + item.amountPaise;
-  }
-  const earnings = Object.entries(earningsAgg).sort(([, a], [, b]) => b - a);
-  const deductions = Object.entries(deductionsAgg).sort(([, a], [, b]) => b - a);
+  useEffect(() => {
+    if (!open || payRun || error) return;
+    let cancelled = false;
+    getPayRunWithSlips(payRunId)
+      .then((run) => {
+        if (!cancelled) setPayRun(run);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load the pay run summary.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, payRunId, payRun, error]);
 
-  const totalPFEmp = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { pfEmployeePaise?: number } | null)?.pfEmployeePaise) ?? 0), 0);
-  const totalPFEr = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { pfEmployerPaise?: number } | null)?.pfEmployerPaise) ?? 0), 0);
-  const totalESIEmp = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { esiEmployeePaise?: number } | null)?.esiEmployeePaise) ?? 0), 0);
-  const totalESIEr = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { esiEmployerPaise?: number } | null)?.esiEmployerPaise) ?? 0), 0);
-  const totalPT = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { ptPaise?: number } | null)?.ptPaise) ?? 0), 0);
-  const totalTDS = payRun.paySlips.reduce((s, p) => s + (((p.statutoryJson as { tdsPaise?: number } | null)?.tdsPaise) ?? 0), 0);
-
-  const companyAddr = [payRun.company.address, payRun.company.city, payRun.company.state, payRun.company.pincode].filter(Boolean).join(", ");
+  const summary = summarize(payRun);
 
   const paperRef = useRef<HTMLDivElement>(null);
 
   function handlePrint() {
+    if (!payRun) return;
     setPrinting(true);
     if (!paperRef.current) {
       setPrinting(false);
@@ -137,7 +141,7 @@ export function PrintSummaryDialog({ payRun }: { payRun: PayRunLike }) {
             </div>
             <Button
               onClick={handlePrint}
-              disabled={printing}
+              disabled={printing || loading || !summary}
               size="sm"
               className="bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm hover:from-indigo-600 hover:to-violet-700"
             >
@@ -146,25 +150,64 @@ export function PrintSummaryDialog({ payRun }: { payRun: PayRunLike }) {
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto bg-muted p-6 print:bg-white print:p-0 print:overflow-visible">
-            <div ref={paperRef} className="mx-auto max-w-3xl bg-white p-10 text-slate-900 shadow-md print:max-w-none print:p-10 print:shadow-none print-area">
-              <SummaryContent
-                payRun={payRun}
-                earnings={earnings}
-                deductions={deductions}
-                totalPFEmp={totalPFEmp}
-                totalPFEr={totalPFEr}
-                totalESIEmp={totalESIEmp}
-                totalESIEr={totalESIEr}
-                totalPT={totalPT}
-                totalTDS={totalTDS}
-                companyAddr={companyAddr}
-              />
-            </div>
+            {error ? (
+              <p className="py-24 text-center text-sm text-destructive">{error}</p>
+            ) : loading || !summary || !payRun ? (
+              <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading pay run summary...
+              </div>
+            ) : (
+              <div ref={paperRef} className="mx-auto max-w-3xl bg-white p-10 text-slate-900 shadow-md print:max-w-none print:p-10 print:shadow-none print-area">
+                <SummaryContent
+                  payRun={payRun}
+                  earnings={summary.earnings}
+                  deductions={summary.deductions}
+                  totalPFEmp={summary.totalPFEmp}
+                  totalPFEr={summary.totalPFEr}
+                  totalESIEmp={summary.totalESIEmp}
+                  totalESIEr={summary.totalESIEr}
+                  totalPT={summary.totalPT}
+                  totalTDS={summary.totalTDS}
+                  companyAddr={summary.companyAddr}
+                />
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
+}
+
+function summarize(payRun: PayRunLike | null) {
+  if (!payRun) return null;
+
+  const earningsAgg: Record<string, number> = {};
+  const deductionsAgg: Record<string, number> = {};
+  for (const slip of payRun.paySlips) {
+    const e = (slip.earningsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
+    const d = (slip.deductionsJson as Array<{ name: string; amountPaise: number }> | null) ?? [];
+    for (const item of e) earningsAgg[item.name] = (earningsAgg[item.name] ?? 0) + item.amountPaise;
+    for (const item of d) deductionsAgg[item.name] = (deductionsAgg[item.name] ?? 0) + item.amountPaise;
+  }
+
+  const stat = (p: PaySlip, key: string) =>
+    ((p.statutoryJson as Record<string, number> | null)?.[key]) ?? 0;
+
+  return {
+    earnings: Object.entries(earningsAgg).sort(([, a], [, b]) => b - a),
+    deductions: Object.entries(deductionsAgg).sort(([, a], [, b]) => b - a),
+    totalPFEmp: payRun.paySlips.reduce((s, p) => s + stat(p, "pfEmployeePaise"), 0),
+    totalPFEr: payRun.paySlips.reduce((s, p) => s + stat(p, "pfEmployerPaise"), 0),
+    totalESIEmp: payRun.paySlips.reduce((s, p) => s + stat(p, "esiEmployeePaise"), 0),
+    totalESIEr: payRun.paySlips.reduce((s, p) => s + stat(p, "esiEmployerPaise"), 0),
+    totalPT: payRun.paySlips.reduce((s, p) => s + stat(p, "ptPaise"), 0),
+    totalTDS: payRun.paySlips.reduce((s, p) => s + stat(p, "tdsPaise"), 0),
+    companyAddr: [payRun.company.address, payRun.company.city, payRun.company.state, payRun.company.pincode]
+      .filter(Boolean)
+      .join(", "),
+  };
 }
 
 function SummaryContent({

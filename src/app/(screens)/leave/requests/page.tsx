@@ -4,13 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { getLeaveRequests } from "@/lib/actions/leave";
+import { getLeaveRequestsPage } from "@/lib/actions/leave";
 import { requireAuth } from "@/lib/rbac";
-import { formatDate } from "@/lib/utils";
-import { LeaveReviewButtons } from "../leave-review-buttons";
 import { CalendarDays, Clock, CheckCircle2, XCircle, ArrowLeft, Filter } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { LeaveRequestList } from "./request-list";
 
 const STATUS_TABS = [
   { key: "PENDING", label: "Pending", icon: Clock, color: "text-amber-600" },
@@ -20,36 +17,21 @@ const STATUS_TABS = [
 
 type StatusKey = (typeof STATUS_TABS)[number]["key"];
 
-type SearchParams = Promise<{ status?: string }>;
+type SearchParams = Promise<{ status?: string; page?: string }>;
 
 function isStatusKey(v: string | undefined): v is StatusKey {
   return !!v && STATUS_TABS.some((t) => t.key === v);
 }
 
 export default async function LeaveRequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  const user = await requireAuth();
+  await requireAuth();
   const params = await searchParams;
   const status: StatusKey = isStatusKey(params.status) ? params.status : "PENDING";
 
-  let employeeIds: string[] | undefined;
-  if (user.role === UserRole.MANAGER) {
-    const me = await prisma.employee.findFirst({ where: { userId: user.id } });
-    if (me) {
-      const reports = await prisma.employee.findMany({
-        where: { managerId: me.id, isActive: true },
-        select: { id: true },
-      });
-      employeeIds = reports.map((r) => r.id);
-    }
-  }
-
-  const requests = await getLeaveRequests(undefined, employeeIds);
-  const filtered = requests.filter((r) => r.status === status);
-  const counts = {
-    PENDING: requests.filter((r) => r.status === "PENDING").length,
-    APPROVED: requests.filter((r) => r.status === "APPROVED").length,
-    REJECTED: requests.filter((r) => r.status === "REJECTED").length,
-  };
+  const { data: requests, page, limit, total, totalPages, counts } = await getLeaveRequestsPage({
+    status,
+    page: params.page,
+  });
 
   return (
     <div className="space-y-6">
@@ -124,63 +106,18 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
             {STATUS_TABS.find((t) => t.key === status)?.label} Requests
-            <Badge variant="secondary" className="ml-1">{filtered.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{total}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                {(() => {
-                  const Icon = STATUS_TABS.find((t) => t.key === status)?.icon ?? Clock;
-                  return <Icon className="h-5 w-5 text-muted-foreground" />;
-                })()}
-              </div>
-              <p className="font-medium">No {status.toLowerCase()} requests</p>
-              <p className="text-sm text-muted-foreground">Nothing here at the moment.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map((req) => (
-                <div key={req.id} className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">
-                        {req.employee.firstName} {req.employee.lastName}
-                      </p>
-                      <span className="text-xs text-muted-foreground font-mono">({req.employee.employeeCode})</span>
-                      <Badge variant="secondary" className="text-[10px]">{req.leaveType}</Badge>
-                    </div>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <span>{req.days} day(s)</span>
-                      <span>·</span>
-                      <span>{formatDate(req.startDate)} – {formatDate(req.endDate)}</span>
-                      {req.employee.department && (
-                        <>
-                          <span>·</span>
-                          <span>{req.employee.department}</span>
-                        </>
-                      )}
-                    </p>
-                    {req.reason && <p className="mt-1.5 text-sm">{req.reason}</p>}
-                    {status !== "PENDING" && req.reviewNote && (
-                      <p className="mt-1 text-xs italic text-muted-foreground">Reviewer note: {req.reviewNote}</p>
-                    )}
-                  </div>
-                  {status === "PENDING" ? (
-                    <LeaveReviewButtons requestId={req.id} />
-                  ) : (
-                    <Badge
-                      variant={status === "APPROVED" ? "success" : "destructive"}
-                      className="ml-4 shrink-0"
-                    >
-                      {status}
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <LeaveRequestList
+            requests={requests}
+            status={status}
+            total={total}
+            page={page}
+            pageSize={limit}
+            totalPages={totalPages}
+          />
         </CardContent>
       </Card>
     </div>

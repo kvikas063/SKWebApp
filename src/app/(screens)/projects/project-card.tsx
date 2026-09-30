@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Clock, ArrowRight, Building2 } from "lucide-react";
-import { formatBudget } from "./budget-utils";
+import { formatINRCompact } from "@/lib/money";
 
 import type { ProjectSummaryRow } from "@/lib/types/projects";
 
@@ -98,7 +98,7 @@ export function ProjectCard({ project }: { project: ProjectSummaryRow }) {
 {Number(project.budgetPaise ?? 0) > 0 && (
              <div className="mt-3 flex items-center justify-between rounded-md bg-muted/60 px-3 py-2">
                <span className="text-xs text-muted-foreground">Budget</span>
-               <span className="text-xs font-bold">{formatBudget(project.budgetPaise ?? 0)}</span>
+               <span className="text-xs font-bold">{formatINRCompact(project.budgetPaise ?? 0)}</span>
              </div>
            )}
       </div>

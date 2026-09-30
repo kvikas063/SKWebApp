@@ -3,8 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
 import { deleteFile } from "@/lib/storage";
+import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
 
-export async function getEmployeeDocuments(employeeId: string) {
+async function assertCanReadEmployeeDocuments(employeeId: string) {
   const user = await requireAuth();
   if (user.role === "MANAGER") {
     const me = await prisma.employee.findFirst({ where: { userId: user.id } });
@@ -12,10 +13,32 @@ export async function getEmployeeDocuments(employeeId: string) {
       throw new Error("Forbidden");
     }
   }
-  return prisma.employeeDocument.findMany({
-    where: { employeeId },
-    orderBy: { uploadedAt: "desc" },
-  });
+  return user;
+}
+
+/** One page of an employee's documents. */
+export async function getEmployeeDocumentsPage(
+  employeeId: string,
+  params: { page?: number | string; limit?: number | string; offset?: number | string } = {}
+) {
+  await assertCanReadEmployeeDocuments(employeeId);
+  const paging = resolvePaging(params);
+
+  const findPage = (p: typeof paging) =>
+    prisma.employeeDocument.findMany({
+      where: { employeeId },
+      orderBy: { uploadedAt: "desc" },
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total] = await Promise.all([
+    findPage(paging),
+    prisma.employeeDocument.count({ where: { employeeId } }),
+  ]);
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+  return { data: settled.data, ...buildPageMeta({ ...paging, page: settled.page }, total) };
 }
 
 export async function deleteEmployeeDocument(documentId: string) {

@@ -271,12 +271,14 @@ function DocumentsTab({
              <div className="divide-y">
                {documents.map((doc) => (
                  <div key={doc.id} className="flex items-center justify-between gap-4 p-4">
-                   <div className="flex items-center gap-3">
-                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 text-indigo-600 dark:text-indigo-400">
-                       <FileText className="h-5 w-5" />
-                     </div>
-                     <div className="min-w-0">
-                       <p className="truncate text-sm font-medium">{doc.fileName}</p>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 text-indigo-600 dark:text-indigo-400">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium" title={doc.fileName}>
+                          {doc.fileName}
+                        </p>
                        <p className="text-xs text-muted-foreground">
                          {doc.type.replace("_", " ")} · {formatDate(doc.uploadedAt)}
                          {doc.fileSize ? ` · ${(doc.fileSize / 1024).toFixed(1)} KB` : ""}
@@ -412,12 +414,12 @@ export function EmployeeTabs({
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="w-full sm:w-auto">
-        <TabsTrigger value="overview" className="flex-1 sm:flex-none">Overview</TabsTrigger>
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
         {(userRole === "EMPLOYEE" || userRole === "ADMIN") && (
-          <TabsTrigger value="documents" className="flex-1 sm:flex-none">My Documents</TabsTrigger>
+          <TabsTrigger value="documents">My Documents</TabsTrigger>
         )}
-        <TabsTrigger value="leave" className="flex-1 sm:flex-none">Leave Balances</TabsTrigger>
+        <TabsTrigger value="leave">Leave Balances</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">
         <OverviewTab

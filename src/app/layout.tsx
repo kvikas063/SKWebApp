@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HRMS Suite — Employee, Payroll & Leave Management",
-  description: "Indian HRMS with payroll, attendance, and leave management",
+  title: "HRMS Suite — Employee, Payroll, Leave & Project Management",
+  description: "Indian HRMS with payroll, attendance, leave, and project management",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

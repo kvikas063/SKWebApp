@@ -1,4 +1,4 @@
-// Prisma schema for HRMS Payroll & Leave Management Suite
+// Prisma schema for HRMS Payroll, Leave & Project Management Suite
 
 generator client {
   provider = "prisma-client-js"

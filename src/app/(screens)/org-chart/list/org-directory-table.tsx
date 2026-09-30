@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Briefcase, Mail, Hash, ChevronRight } from "lucide-react";
-import { formatINR } from "@/lib/money";
+import { formatINR, formatINRCompact } from "@/lib/money";
 import { Pagination } from "@/components/ui/pagination";
 
 export type OrgEmployee = {
@@ -165,7 +165,7 @@ export function OrgDirectoryTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                  {d.monthlyCost > 0 ? formatINR(d.monthlyCost) : "—"}
+                  {d.monthlyCost > 0 ? formatINRCompact(d.monthlyCost) : "—"}
                 </TableCell>
                 {isAdmin && (
                   <TableCell>

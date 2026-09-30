@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { requireAuth } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { formatINR } from "@/lib/money";
+import { formatINR, formatINRCompact } from "@/lib/money";
 import { getMonthName } from "@/lib/utils";
 import { Banknote, Wallet, TrendingUp, Receipt } from "lucide-react";
 import { PayslipList } from "./payslip-list";
@@ -56,7 +56,7 @@ export default async function MyPayslipsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           title="Total Earned"
-          value={formatINR(totalEarned)}
+          value={formatINRCompact(totalEarned)}
           icon={<Wallet className="h-5 w-5" />}
           accent="from-emerald-500 to-teal-500"
         />

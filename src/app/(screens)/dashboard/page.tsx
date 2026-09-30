@@ -12,7 +12,7 @@ import { QuickPunch } from "@/components/dashboard/quick-punch";
 import { ApplyLeaveCard } from "@/components/dashboard/apply-leave-card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatINR } from "@/lib/money";
+import { formatINR, formatINRCompact } from "@/lib/money";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
   Users,
@@ -293,9 +293,9 @@ function AdminDashboard({
         />
         <StatCard
           title="Latest PayRun"
-          value={data.latestPayRun ? formatINR(data.latestPayRun.totalNetPaise) : "—"}
+          value={data.latestPayRun ? formatINRCompact(data.latestPayRun.totalNetPaise) : "—"}
           icon={<IndianRupee className="h-5 w-5" />}
-          description={data.latestPayRun ? `Gross: ${formatINR(data.latestPayRun.totalGrossPaise)}` : "No runs yet"}
+          description={data.latestPayRun ? `Gross: ${formatINRCompact(data.latestPayRun.totalGrossPaise)}` : "No runs yet"}
           accent="from-indigo-500 to-purple-500"
           href={data.latestPayRun ? `/payroll/${data.latestPayRun.id}` : "/payroll"}
         />
@@ -742,12 +742,9 @@ function PayrollTrendFooter({ trend }: { trend: { label: string; value: number }
   const latest = trend[trend.length - 1];
   const previous = trend.length >= 2 ? trend[trend.length - 2] : null;
 
-  const fmt = (n: number) => {
-    if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)}Cr`;
-    if (n >= 100000) return `₹${(n / 100000).toFixed(2)}L`;
-    if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-    return `₹${n.toFixed(0)}`;
-  };
+  // `trend[].value` is rupees (the action divides paise by 100 before
+  // returning it), while formatINRCompact takes paise.
+  const fmt = (rupees: number) => formatINRCompact(rupees * 100);
 
   let changePct: number | null = null;
   if (previous && previous.value > 0) {

@@ -1,13 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, requireAuth } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
 import { EmployeeType, LeaveType, Prisma } from "@prisma/client";
 import { sendEmail } from "@/lib/services/email";
 import { formatDate } from "@/lib/utils";
 import { notifyUser, fanoutNotifications } from "./notifications";
+import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
 
 const leavePolicySchema = z.object({
   employeeType: z.nativeEnum(EmployeeType),
@@ -191,6 +192,127 @@ export async function getLeaveRequests(status?: string, employeeIds?: string[]) 
     },
     orderBy: { createdAt: "desc" },
   });
+}
+
+/**
+ * One page of leave requests, filtered by status in the query, plus the per-status
+ * counts the screen's stat cards and tabs need. The counts deliberately ignore
+ * the active status filter so each tab badge stays meaningful.
+ */
+export async function getLeaveRequestsPage(params: {
+  status?: string;
+  page?: number | string;
+  limit?: number | string;
+  offset?: number | string;
+  employeeIds?: string[];
+}) {
+  const user = await requireAuth();
+  const paging = resolvePaging(params);
+
+  // A manager only ever sees their own reports.
+  let scoped = params.employeeIds;
+  if (user.role === "MANAGER" && !scoped) {
+    const me = await prisma.employee.findFirst({ where: { userId: user.id }, select: { id: true } });
+    const reports = me
+      ? await prisma.employee.findMany({ where: { managerId: me.id, isActive: true }, select: { id: true } })
+      : [];
+    scoped = reports.map((r) => r.id);
+  }
+
+  const scope: Prisma.LeaveRequestWhereInput =
+    scoped && scoped.length > 0 ? { employeeId: { in: scoped } } : {};
+
+  const status = params.status?.trim();
+  const where: Prisma.LeaveRequestWhereInput = {
+    ...scope,
+    ...(status && status !== "ALL" ? { status: status as "PENDING" | "APPROVED" | "REJECTED" } : {}),
+  };
+
+  const findPage = (p: typeof paging) =>
+    prisma.leaveRequest.findMany({
+      where,
+      select: {
+        id: true,
+        leaveType: true,
+        startDate: true,
+        endDate: true,
+        dayType: true,
+        days: true,
+        reason: true,
+        reviewNote: true,
+        status: true,
+        employee: {
+          select: { firstName: true, lastName: true, employeeCode: true, department: true, designation: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total, pending, approved, rejected] = await Promise.all([
+    findPage(paging),
+    prisma.leaveRequest.count({ where }),
+    prisma.leaveRequest.count({ where: { ...scope, status: "PENDING" } }),
+    prisma.leaveRequest.count({ where: { ...scope, status: "APPROVED" } }),
+    prisma.leaveRequest.count({ where: { ...scope, status: "REJECTED" } }),
+  ]);
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+
+  return {
+    data: settled.data,
+    ...buildPageMeta({ ...paging, page: settled.page }, total),
+    counts: { PENDING: pending, APPROVED: approved, REJECTED: rejected },
+  };
+}
+
+/**
+ * A single employee's leave requests, paged. `my-leave` previously pulled every
+ * request in the company and filtered in memory.
+ */
+export async function getMyLeaveRequestsPage(params: {
+  employeeId: string;
+  page?: number | string;
+  limit?: number | string;
+  offset?: number | string;
+}) {
+  const user = await requireAuth();
+  // Employees may only read their own history.
+  if (user.role === "EMPLOYEE" && user.employeeId !== params.employeeId) {
+    throw new Error("Not authorized");
+  }
+
+  const paging = resolvePaging(params);
+  const where: Prisma.LeaveRequestWhereInput = { employeeId: params.employeeId };
+
+  const findPage = (p: typeof paging) =>
+    prisma.leaveRequest.findMany({
+      where,
+      select: {
+        id: true,
+        leaveType: true,
+        startDate: true,
+        endDate: true,
+        dayType: true,
+        days: true,
+        reason: true,
+        reviewNote: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total] = await Promise.all([
+    findPage(paging),
+    prisma.leaveRequest.count({ where }),
+  ]);
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+  return { data: settled.data, ...buildPageMeta({ ...paging, page: settled.page }, total) };
 }
 
 export async function reviewLeaveRequest(

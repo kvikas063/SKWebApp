@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const publicPaths = ["/login", "/api/auth", "/privacy", "/terms", "/support"];
 
-export function middleware(req: Request) {
+export function proxy(req: Request) {
   const { protocol, pathname } = new URL(req.url);
 
   // Redirect HTTP -> HTTPS in production so cookies are served securely.
@@ -22,6 +22,13 @@ export function middleware(req: Request) {
     cookieHeader.includes("__Secure-authjs.session-token");
 
   if (!hasSession && !isPublic) {
+    // API routes must answer with a status code and a JSON body, not a
+    // redirect to an HTML login page. The route handlers run their own
+    // `auth()` check, so let them produce the 401 body.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

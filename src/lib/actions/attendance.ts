@@ -3,7 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireAuth } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus, Prisma } from "@prisma/client";
+import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
 
 function todayDate(): Date {
   const d = new Date();
@@ -99,6 +100,102 @@ export async function getAttendanceForMonth(year: number, month: number, employe
     },
     orderBy: [{ date: "asc" }, { employee: { employeeCode: "asc" } }],
   });
+}
+
+/**
+ * One page of attendance records for a month, with the status filter applied in
+ * the query rather than in the browser, and the header counts computed over the
+ * whole month so the stat cards stay right on every page.
+ *
+ * `getAttendanceForMonth` is left unbounded on purpose: payroll has to read
+ * every record in the month to compute LOP and paid days.
+ */
+export async function getAttendancePage(params: {
+  year: number;
+  month: number;
+  page?: number | string;
+  limit?: number | string;
+  offset?: number | string;
+  status?: string;
+  employeeIds?: string[];
+}) {
+  const user = await requireAuth();
+  const paging = resolvePaging({ page: params.page, limit: params.limit, offset: params.offset });
+
+  const start = new Date(params.year, params.month - 1, 1);
+  const end = new Date(params.year, params.month, 0);
+
+  // A manager only ever sees their own reports.
+  let scopedEmployeeIds = params.employeeIds;
+  if (user.role === "MANAGER" && !scopedEmployeeIds) {
+    const me = await prisma.employee.findFirst({ where: { userId: user.id }, select: { id: true } });
+    const reports = me
+      ? await prisma.employee.findMany({ where: { managerId: me.id, isActive: true }, select: { id: true } })
+      : [];
+    scopedEmployeeIds = reports.map((r) => r.id);
+  }
+
+  const where: Prisma.AttendanceWhereInput = {
+    date: { gte: start, lte: end },
+    ...(scopedEmployeeIds && scopedEmployeeIds.length > 0
+      ? { employeeId: { in: scopedEmployeeIds } }
+      : {}),
+  };
+
+  // Status counts ignore the status filter itself, so the dropdown can show what
+  // selecting each status would yield.
+  const statusWhere: Prisma.AttendanceWhereInput = { ...where };
+  const status = params.status?.trim();
+  if (status && status !== "ALL") {
+    where.status = status as AttendanceStatus;
+  }
+
+  const findPage = (p: typeof paging) =>
+    prisma.attendance.findMany({
+      where,
+      select: {
+        id: true,
+        date: true,
+        punchIn: true,
+        punchOut: true,
+        status: true,
+        employee: { select: { firstName: true, lastName: true, employeeCode: true } },
+      },
+      orderBy: [{ date: "asc" }, { employee: { employeeCode: "asc" } }],
+      take: p.take,
+      skip: p.skip,
+    });
+
+  const [data, total, present, absent, halfDay] = await prisma.$transaction([
+    findPage(paging),
+    prisma.attendance.count({ where }),
+    prisma.attendance.count({ where: { ...statusWhere, status: "PRESENT" } }),
+    prisma.attendance.count({ where: { ...statusWhere, status: { in: ["ABSENT", "LOP"] } } }),
+    prisma.attendance.count({ where: { ...statusWhere, status: "HALF_DAY" } }),
+  ]);
+
+  // Facet counts are computed outside the transaction array: Prisma's `groupBy`
+  // generic does not narrow when it is one element of a heterogeneous tuple.
+  const grouped = await prisma.attendance.groupBy({
+    by: ["status"],
+    where: statusWhere,
+    orderBy: { status: "asc" },
+    _count: { status: true },
+  });
+
+  const settled = await settlePage({ data, paging, total, refetch: findPage });
+
+  return {
+    data: settled.data,
+    ...buildPageMeta({ ...paging, page: settled.page }, total),
+    summary: {
+      totalRecords: grouped.reduce((sum, g) => sum + g._count.status, 0),
+      present,
+      absent,
+      halfDay,
+    },
+    statusCounts: grouped.map((g) => ({ status: g.status, count: g._count.status })),
+  };
 }
 
 export async function updateAttendance(

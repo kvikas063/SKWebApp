@@ -1,14 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { EmployeeDocument } from "@prisma/client";
 import { FileText, Download, Trash2, Eye } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { Pagination } from "@/components/ui/pagination";
 import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 
-export function DocumentsList({ documents }: { documents: EmployeeDocument[] }) {
+export function DocumentsList({
+  documents,
+  total,
+  page,
+  pageSize,
+  totalPages,
+}: {
+  documents: EmployeeDocument[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
+
+  function goTo(p: number) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (p === 1) next.delete("page");
+    else next.set("page", String(p));
+    const qs = next.toString();
+    startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
+  }
+
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<EmployeeDocument | null>(null);
@@ -62,7 +89,7 @@ export function DocumentsList({ documents }: { documents: EmployeeDocument[] }) 
     setPreviewDoc(doc);
   }
 
-  if (documents.length === 0) {
+  if (total === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -85,12 +112,14 @@ export function DocumentsList({ documents }: { documents: EmployeeDocument[] }) 
           <div className="divide-y">
             {documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between gap-4 p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 text-indigo-600 dark:text-indigo-400">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{doc.fileName}</p>
+                    <p className="truncate text-sm font-medium" title={doc.fileName}>
+                      {doc.fileName}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {doc.type.replace("_", " ")} · {formatDate(doc.uploadedAt)}
                       {doc.fileSize ? ` · ${(doc.fileSize / 1024).toFixed(1)} KB` : ""}
@@ -144,6 +173,13 @@ export function DocumentsList({ documents }: { documents: EmployeeDocument[] }) 
             ))}
           </div>
         </CardContent>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={total}
+          pageSize={pageSize}
+          onPageChange={goTo}
+        />
       </Card>
 
       {previewDoc && (

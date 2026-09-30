@@ -131,14 +131,18 @@ export function UploadDocumentDialog({ open, onOpenChange }: { open: boolean; on
                 Choose File
               </Button>
             ) : (
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/10 text-indigo-600 dark:text-indigo-400">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
+                    <p className="truncate text-sm font-medium" title={file.name}>
+                      {file.name}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
                   </div>
                 </div>
                 <Button
