@@ -25,15 +25,28 @@ function getPoolConfig(): PoolConfig {
   return { connectionString: url, max: 1, idleTimeoutMillis: 10000 };
 }
 
-const adapter = new PrismaPg(getPoolConfig());
+// Lazily create the client on first use. Importing this module must never
+// connect to the database or throw — it is imported during static
+// prerendering (e.g. by route handlers), where DATABASE_URL is not set.
+// The actual connection happens only when a query runs, at which point the
+// runtime environment (Vercel) has DATABASE_URL available.
+let client: PrismaClient | null = null;
 
-function createClient(): PrismaClient {
-  return new PrismaClient({
+function getClient(): PrismaClient {
+  if (client) return client;
+  const adapter = new PrismaPg(getPoolConfig());
+  client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     adapter,
   });
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  return client;
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Proxy so `prisma.user.findUnique(...)` works without eagerly constructing
+// the client. This preserves the existing `prisma.<model>.<method>` API.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return getClient()[prop as keyof PrismaClient];
+  },
+});
