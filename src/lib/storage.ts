@@ -49,7 +49,7 @@ export async function saveFile(file: File, folder: string): Promise<StoredFile> 
     }
     const blobPath = `${folder}/${safeName}`;
     const blob = await put(blobPath, buffer, {
-      access: "public",
+      access: "private",
       contentType: file.type,
     });
     return {
