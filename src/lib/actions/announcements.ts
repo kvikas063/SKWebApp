@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/services/email";
 import { fanoutNotifications } from "./notifications";
+import { revalidatePath } from "next/cache";
 
 export async function listAnnouncements(companyId: string, opts?: { authorId?: string; audience?: string; take?: number }) {
   return prisma.announcement.findMany({
@@ -116,6 +117,9 @@ export async function createAnnouncement(data: {
     href: "/dashboard",
   }).catch((e) => console.error("[announcement] notification failed:", e));
 
+
+  revalidatePath("/announcements");
+  revalidatePath("/dashboard");
   return ann;
 }
 
@@ -131,6 +135,7 @@ export async function deleteAnnouncement(id: string) {
     entityType: "Announcement",
     entityId: id,
   });
+  revalidatePath("/announcements");
 }
 
 export async function togglePin(id: string) {
@@ -149,5 +154,7 @@ export async function togglePin(id: string) {
     entityId: id,
     after: { pinned: updated.pinned },
   });
+
+  revalidatePath("/announcements");
   return updated;
 }

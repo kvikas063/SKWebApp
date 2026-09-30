@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/services/email";
 import { formatDate } from "@/lib/utils";
 import { notifyUser, fanoutNotifications } from "./notifications";
 import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { revalidatePath } from "next/cache";
 
 const leavePolicySchema = z.object({
   employeeType: z.nativeEnum(EmployeeType),
@@ -40,6 +41,9 @@ export async function upsertLeavePolicy(
   if (id) {
     const updated = await prisma.leavePolicy.update({ where: { id }, data: parsed });
     await logAudit({ actorId: user.id, companyId: company.id, action: "UPDATE", entityType: "LeavePolicy", entityId: id, after: updated });
+
+    revalidatePath("/leave");
+    revalidatePath("/my-leave");
     return updated;
   }
 
@@ -47,6 +51,9 @@ export async function upsertLeavePolicy(
     data: { ...parsed, companyId: company.id },
   });
   await logAudit({ actorId: user.id, companyId: company.id, action: "CREATE", entityType: "LeavePolicy", entityId: created.id, after: created });
+
+  revalidatePath("/leave");
+  revalidatePath("/my-leave");
   return created;
 }
 
@@ -116,6 +123,9 @@ export async function initializeLeaveBalances(year: number) {
     after: { year, count },
   });
 
+
+  revalidatePath("/leave");
+  revalidatePath("/my-leave");
   return { count };
 }
 
@@ -177,6 +187,10 @@ export async function createLeaveRequest(employeeId: string, data: z.infer<typeo
     }).catch((e) => console.error("[leave-create] notification failed:", e));
   }
 
+
+  revalidatePath("/my-leave");
+  revalidatePath("/leave/requests");
+  revalidatePath("/leave");
   return request;
 }
 
@@ -401,6 +415,10 @@ export async function reviewLeaveRequest(
     }).catch((e) => console.error("[leave-review] notification failed:", e));
   }
 
+
+  revalidatePath("/leave/requests");
+  revalidatePath("/leave");
+  revalidatePath("/my-leave");
   return updated;
 }
 
@@ -434,5 +452,9 @@ export async function addHoliday(date: string, name: string) {
     after: holiday,
   });
 
+
+  revalidatePath("/holidays");
+  revalidatePath("/leave");
+  revalidatePath("/dashboard");
   return holiday;
 }

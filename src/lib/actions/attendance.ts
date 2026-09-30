@@ -5,6 +5,7 @@ import { requireAdmin, requireAuth } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import { AttendanceStatus, Prisma } from "@prisma/client";
 import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { revalidatePath } from "next/cache";
 
 function todayDate(): Date {
   const d = new Date();
@@ -44,6 +45,10 @@ export async function punchIn(employeeId: string) {
     after: attendance,
   });
 
+
+  revalidatePath("/my-attendance");
+  revalidatePath("/attendance");
+  revalidatePath("/dashboard");
   return attendance;
 }
 
@@ -76,6 +81,10 @@ export async function punchOut(employeeId: string) {
     after: attendance,
   });
 
+
+  revalidatePath("/my-attendance");
+  revalidatePath("/attendance");
+  revalidatePath("/dashboard");
   return attendance;
 }
 
@@ -225,6 +234,9 @@ export async function updateAttendance(
     after: updated,
   });
 
+
+  revalidatePath("/attendance");
+  revalidatePath("/my-attendance");
   return updated;
 }
 
@@ -296,6 +308,11 @@ export async function closeMonth(year: number, month: number) {
     after: { year, month, lopCreated: created },
   });
 
+
+  revalidatePath("/attendance");
+  revalidatePath("/my-attendance");
+  revalidatePath("/payroll");
+  revalidatePath("/dashboard");
   return { lopCreated: created };
 }
 

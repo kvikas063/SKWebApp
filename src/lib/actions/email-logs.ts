@@ -5,6 +5,7 @@ import { retryFailedEmail } from "@/lib/services/email";
 import { requireAdmin } from "@/lib/rbac";
 
 import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { revalidatePath } from "next/cache";
 import { Prisma, EmailStatus } from "@prisma/client";
 
 export async function getEmailLogStats(companyId: string) {
@@ -58,5 +59,8 @@ export async function getEmailLogsPage(
 
 export async function retryEmail(logId: string) {
   await requireAdmin();
-  return retryFailedEmail(logId);
+  const result = await retryFailedEmail(logId);
+
+  revalidatePath("/email-logs");
+  return result;
 }

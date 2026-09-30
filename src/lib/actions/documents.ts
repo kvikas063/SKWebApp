@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
 import { deleteFile } from "@/lib/storage";
 import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { revalidatePath } from "next/cache";
 
 async function assertCanReadEmployeeDocuments(employeeId: string) {
   const user = await requireAuth();
@@ -62,5 +63,7 @@ export async function deleteEmployeeDocument(documentId: string) {
     where: { id: documentId },
   });
 
+
+  revalidatePath("/my-documents");
   return { success: true };
 }

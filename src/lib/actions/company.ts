@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const companySchema = z.object({
@@ -43,5 +44,8 @@ export async function updateCompany(data: z.infer<typeof companySchema>) {
     after: updated,
   });
 
+
+  revalidatePath("/", "layout");
+  revalidatePath("/settings");
   return updated;
 }

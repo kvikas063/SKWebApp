@@ -8,6 +8,7 @@ import { z } from "zod";
 import { EmployeeType, TaxRegime, UserRole } from "@prisma/client";
 import { rupeesToPaise } from "@/lib/money";
 import { listEmployees } from "@/lib/services/employees";
+import { revalidatePath } from "next/cache";
 import type { GetEmployeesParams, PaginatedEmployees } from "@/lib/types/employees";
 
 const employeeSchema = z.object({
@@ -123,6 +124,8 @@ export async function createEmployee(data: z.infer<typeof employeeSchema>) {
     after: employee,
   });
 
+
+  revalidatePath("/employees");
   return employee;
 }
 
@@ -156,6 +159,9 @@ export async function updateEmployee(id: string, data: Partial<z.infer<typeof em
     after: updated,
   });
 
+
+  revalidatePath("/employees");
+  revalidatePath(`/employees/${id}`);
   return updated;
 }
 
@@ -189,6 +195,8 @@ export async function deleteEmployee(id: string) {
     before,
   });
 
+
+  revalidatePath("/employees");
   return { ok: true as const };
 }
 
@@ -218,6 +226,9 @@ export async function upsertSalaryComponent(
       entityId: id,
       after: updated,
     });
+
+    revalidatePath(`/employees/${employeeId}`);
+    revalidatePath("/employees");
     return updated;
   }
 
@@ -231,6 +242,9 @@ export async function upsertSalaryComponent(
     entityId: created.id,
     after: created,
   });
+
+  revalidatePath(`/employees/${employeeId}`);
+  revalidatePath("/employees");
   return created;
 }
 
@@ -246,5 +260,7 @@ export async function deleteSalaryComponent(id: string) {
     entityType: "SalaryComponent",
     entityId: id,
   });
+
+  revalidatePath("/employees");
   return updated;
 }

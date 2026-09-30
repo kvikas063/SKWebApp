@@ -11,6 +11,7 @@ import { getMonthName } from "@/lib/utils";
 import { PayRunStatus } from "@prisma/client";
 import { fanoutNotifications } from "./notifications";
 import { buildPageMeta, resolvePaging, settlePage } from "@/lib/services/pagination";
+import { revalidatePath } from "next/cache";
 
 const VALID_TRANSITIONS: Record<PayRunStatus, PayRunStatus[]> = {
   DRAFT: ["REVIEWING", "CANCELLED"],
@@ -248,6 +249,8 @@ export async function openPayRun(year: number, month: number) {
     after: updated,
   });
 
+
+  revalidatePath("/payroll");
   return updated;
 }
 
@@ -322,6 +325,9 @@ export async function transitionPayRun(id: string, toStatus: PayRunStatus) {
     }).catch((e) => console.error("[payroll-finalize] notification failed:", e));
   }
 
+
+  revalidatePath("/payroll");
+  revalidatePath(`/payroll/${id}`);
   return updated;
 }
 
@@ -345,6 +351,9 @@ export async function cancelPayRun(id: string) {
     before: payRun,
     after: updated,
   });
+
+  revalidatePath("/payroll");
+  revalidatePath(`/payroll/${id}`);
   return updated;
 }
 
