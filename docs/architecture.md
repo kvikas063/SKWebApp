@@ -48,7 +48,7 @@ This document explains the **tech stack**, the **layered code structure**, the *
 ### Email & File Storage
 | Technology | Purpose |
 |-----------|---------|
-| **Resend** | Transactional email delivery |
+| **EmailJS** | Transactional email delivery |
 | **@vercel/blob** | Cloud object storage for uploaded documents (prod); local disk fallback |
 | **bcryptjs** `passwordHash` | User password hashing |
 
@@ -209,7 +209,7 @@ src/lib/services/
 ├── payroll-exports.ts    # Bank CSV + PF Challan (SFMS) export generators
 ├── payslip-pdf.tsx       # @react-pdf/renderer: payslip PDF document
 ├── project-report-pdf.tsx # @react-pdf/renderer: project report PDF
-├── email.ts              # Email service: templates, Resend integration, queue logging
+├── email.ts              # Email service: templates, EmailJS integration, queue logging
 └── __tests__/
     └── payroll-engine.test.ts  # Vitest: PF/ESI/PT/pro-rata/payroll assertions
 ```
@@ -279,7 +279,7 @@ Browser → Middleware (Edge) → auth cookie? → /page.tsx (Server Component)
 ```
 Client (form submit) → Server Action (src/lib/actions/leave.ts)
   → requireAdmin() [RBAC] → Prisma write → logAudit() [audit trail]
-  → Optional: sendEmail() [Resend] + fanoutNotifications() [in-app]
+  → Optional: sendEmail() [EmailJS] + fanoutNotifications() [in-app]
   → Return result → Client revalidation (router.refresh / RSC)
 ```
 
@@ -289,7 +289,7 @@ transitionPayRun(LOCKED → FINALIZED)
   → Assert valid transition (VALID_TRANSIONS table)
   → Mark finalizedById / finalizedAt
   → For each payslip:
-      │  → sendEmail(template=PAYSLIP_READY) [Resend]
+       │  → sendEmail(template=PAYSLIP_READY) [EmailJS]
       └→ fanoutNotifications(type=PAYSLIP)
   → logAudit(action=FINALIZED)
 ```
@@ -423,7 +423,7 @@ SKWebApp-GitRepo/
 ## 8. Deployment
 
 - **Primary platform**: Vercel (`vercel.json` configures build → `.next` output directory).
-- **Self-hosted / PaaS**: `Procfile` defines `web: npm start`. Requires `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `RESEND_API_KEY`, and `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`) env vars.
+- **Self-hosted / PaaS**: `Procfile` defines `web: npm start`. Requires `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`) env vars.
 - **Database**: Local dev via `docker compose up -d`; production uses Prisma Postgres (pooled endpoint) or self-managed Postgres.
 
 ---
@@ -445,7 +445,7 @@ All direct dependencies were bumped to the latest stable releases and the deprec
 | `lucide-react` | 0.511.0 | 1.48.0 |
 | `@types/node` | 20.19.43 | 26.6.3 |
 | `recharts` | 2.15.4 | 3.10.1 |
-| `resend` | 4.8.0 | 6.30.0 |
+| `emailjs` | — (new) | REST API via fetch (no npm dependency) |
 | `@next/bundle-analyzer` | 16.3.5 | 16.3.7 |
 | `next-auth` | 5.0.0-beta.28 | 5.0.0-beta.32 |
 
@@ -459,6 +459,7 @@ All direct dependencies were bumped to the latest stable releases and the deprec
 | Package | Reason |
 |---------|--------|
 | `@types/bcryptjs` | Deprecated stub — `bcryptjs@3.0.3` ships its own type definitions |
+| `resend` | Replaced by EmailJS (REST API via fetch, no npm dependency) |
 
 ### Unused (not removed — kept for potential future use)
 | Package | Note |
