@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SKWebApp HRMS Suite — Runtime Architecture",
+    "locale": "en",
+    "output": ".archify/architecture-hrms-runtime-20261005-132355/hrms-runtime-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/kvikas063/SKWebApp.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "96f71a8239216d1929f9de1ae9b5ec9c40068475"
+    }
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "HR Staff & Employees",
+      "sublabel": "Admin · Manager · Employee",
+      "pos": [40, 300],
+      "size": [150, 72],
+      "sources": [
+        { "path": "prisma/schema.prisma", "line": 13, "end_line": 17, "label": "UserRole enum" },
+        { "path": "src/auth.ts", "line": 43, "end_line": 49, "label": "Credentials sign-in" }
+      ]
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "Next.js 16 App Router",
+      "sublabel": "RSC pages · client islands",
+      "tag": "AppShell",
+      "pos": [315, 300],
+      "size": [175, 72],
+      "sources": [
+        { "path": "src/app/(screens)/layout.tsx", "line": 1, "end_line": 5, "label": "Authenticated layout" },
+        { "path": "src/components/layout/app-shell.tsx", "line": 10, "end_line": 32, "label": "AppShell server fetch" }
+      ]
+    },
+    {
+      "id": "authjs",
+      "type": "security",
+      "label": "Auth.js v5",
+      "sublabel": "bcrypt · JWT 24h",
+      "tag": "no middleware.ts",
+      "pos": [315, 96],
+      "size": [175, 72],
+      "sources": [
+        { "path": "src/auth.ts", "line": 25, "end_line": 42, "label": "JWT session + cookie" },
+        { "path": "src/auth.ts", "line": 43, "end_line": 81, "label": "Credentials authorize" },
+        { "path": "src/lib/rbac.ts", "line": 20, "end_line": 30, "label": "requireAuth/requireAdmin" }
+      ]
+    },
+    {
+      "id": "actions",
+      "type": "backend",
+      "label": "Server Actions",
+      "sublabel": "\"use server\" · 13 modules",
+      "tag": "revalidatePath",
+      "pos": [600, 300],
+      "size": [165, 72],
+      "sources": [
+        { "path": "src/lib/actions/payroll.ts", "line": 1, "end_line": 13, "label": "Action module header" },
+        { "path": "src/lib/actions/employees.ts", "line": 1, "end_line": 2, "label": "Employee mutations" }
+      ]
+    },
+    {
+      "id": "routes",
+      "type": "backend",
+      "label": "Route Handlers",
+      "sublabel": "/api/* · upload · PDF",
+      "tag": "6 endpoints",
+      "pos": [600, 504],
+      "size": [165, 72],
+      "sources": [
+        { "path": "src/app/api/documents/upload/route.ts", "line": 1, "end_line": 30, "label": "Upload POST guard" },
+        { "path": "src/app/api/employees/route.ts", "line": 1, "end_line": 34, "label": "Employees GET" },
+        { "path": "src/app/api/payslips/[slipId]/pdf/route.ts", "line": 1, "end_line": 10, "label": "Lazy PDF render" }
+      ]
+    },
+    {
+      "id": "blob",
+      "type": "cloud",
+      "label": "Document Store",
+      "sublabel": "Vercel Blob · local disk",
+      "tag": "env branch",
+      "pos": [600, 672],
+      "size": [165, 72],
+      "sources": [
+        { "path": "src/lib/storage.ts", "line": 32, "end_line": 60, "label": "saveFile Vercel path" },
+        { "path": "src/lib/storage.ts", "line": 62, "end_line": 77, "label": "saveFile disk path" }
+      ]
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "Domain Services",
+      "sublabel": "payroll · audit · email",
+      "pos": [820, 300],
+      "size": [175, 72],
+      "sources": [
+        { "path": "src/lib/services/payroll-engine.ts", "line": 1, "end_line": 25, "label": "Pure payroll compute" },
+        { "path": "src/lib/services/email.ts", "line": 208, "end_line": 243, "label": "sendEmail" },
+        { "path": "src/lib/audit.ts", "line": 1, "end_line": 12, "label": "logAudit" }
+      ]
+    },
+    {
+      "id": "prisma",
+      "type": "backend",
+      "label": "Prisma Client",
+      "sublabel": "lazy proxy · PrismaPg",
+      "pos": [1095, 300],
+      "size": [155, 72],
+      "sources": [
+        { "path": "src/lib/prisma.ts", "line": 1, "end_line": 26, "label": "Pool config" },
+        { "path": "src/lib/prisma.ts", "line": 33, "end_line": 52, "label": "Lazy client proxy" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "money as integer paise",
+      "tag": "26 models",
+      "pos": [1320, 300],
+      "size": [165, 72],
+      "sources": [
+        { "path": "prisma/schema.prisma", "line": 7, "end_line": 9, "label": "PostgreSQL datasource" },
+        { "path": "prisma/schema.prisma", "line": 416, "end_line": 438, "label": "PaySlip snapshot" }
+      ]
+    },
+    {
+      "id": "resend",
+      "type": "external",
+      "label": "Resend Email API",
+      "sublabel": "fetch api.resend.com",
+      "tag": "11 templates",
+      "pos": [1320, 96],
+      "size": [175, 72],
+      "sources": [
+        { "path": "src/lib/services/email.ts", "line": 160, "end_line": 185, "label": "sendViaResend" },
+        { "path": "src/lib/services/email.ts", "line": 4, "end_line": 5, "label": "RESEND_API_KEY" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Next.js server runtime — one Node process",
+      "wraps": ["app", "authjs", "actions", "routes", "services", "prisma"],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "users-to-app",
+      "from": "users",
+      "to": "app",
+      "label": "HTTPS · RSC + forms",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-to-actions",
+      "from": "app",
+      "to": "actions",
+      "label": "server action call"
+    },
+    {
+      "id": "actions-to-services",
+      "from": "actions",
+      "to": "services"
+    },
+    {
+      "id": "services-to-prisma",
+      "from": "services",
+      "to": "prisma",
+      "label": "Prisma queries"
+    },
+    {
+      "id": "prisma-to-postgres",
+      "from": "prisma",
+      "to": "postgres",
+      "label": "SQL",
+      "variant": "security"
+    },
+    {
+      "id": "app-to-authjs",
+      "from": "app",
+      "to": "authjs",
+      "label": "requireAuth() · verify JWT",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "users-to-routes",
+      "from": "users",
+      "to": "routes",
+      "label": "REST · multipart upload",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "routes-to-services",
+      "from": "routes",
+      "to": "services",
+      "label": "call domain logic",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [[907.5, 540]]
+    },
+    {
+      "id": "routes-to-blob",
+      "from": "routes",
+      "to": "blob",
+      "label": "saveFile()",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "services-to-resend",
+      "from": "services",
+      "to": "resend",
+      "label": "POST /emails · synchronous",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [[907.5, 232], [1407.5, 232]]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Request path",
+      "items": [
+        "Server Actions are the primary mutation surface: 13 \"use server\" modules under src/lib/actions, each calling revalidatePath after a write.",
+        "Only 6 route handlers exist (/api/*), covering the file and read paths the browser needs directly: document upload/download, payslip preview/PDF, project report PDF and paginated employees JSON.",
+        "@react-pdf/renderer is lazy-loaded inside the two PDF handlers so the common serverless function graph stays small (src/app/api/payslips/[slipId]/pdf/route.ts:6-10).",
+        "next.config.ts sets Cache-Control: no-store on every /api/* response, so route handlers never serve a cached JSON payload."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data and money",
+      "items": [
+        "PostgreSQL is the only store of record: 26 Prisma models spanning HR, payroll, projects, audit, notifications and email logs.",
+        "All money is integer paise — SalaryComponent.amountPaise, PayRun totals and StatutoryConfig thresholds — with formatting isolated in src/lib/money.ts.",
+        "PaySlip rows are immutable JSON snapshots written when a PayRun is finalized, so historic payslips never re-derive from current salary data.",
+        "The Prisma client is a lazy Proxy (src/lib/prisma.ts:48-52) so importing it during static prerendering never opens a connection."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Auth and roles",
+      "items": [
+        "Auth.js v5 Credentials provider bcrypt-compares the stored hash, then issues a 24h JWT carrying role, employeeId and companyId (src/auth.ts:26, 60-63, 84-101).",
+        "There is no middleware.ts: every server entry guards itself — AppShell calls requireAuth(), admin actions call requireAdmin(), and each route handler checks the session on its own.",
+        "The credentials callback reads User, Employee and Company from Postgres (src/auth.ts:53-70); the rest of the request then works from the JWT alone.",
+        "Account, Session and VerificationToken models exist for adapter-based sessions, but the configured JWT strategy has no adapter and never reads or writes them."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "External side effects",
+      "items": [
+        "Resend is called synchronously inside the calling action (src/lib/services/email.ts:228); every attempt writes an EmailLog row that flips QUEUED to SENT or FAILED and can be retried from the email-logs screen.",
+        "Documents go to a private Vercel Blob on Vercel; elsewhere saveFile writes under UPLOAD_DIR or /tmp (src/lib/storage.ts:41-77). Disk fallback is deliberately disabled on Vercel because that filesystem is ephemeral.",
+        "@vercel/analytics is mounted in the root layout (src/app/layout.tsx:6, 29).",
+        "Punch-in/out, payroll, leave and notifications all resolve against the same Postgres tables — there is no queue, worker or cache anywhere in the runtime path."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Notable gaps",
+      "items": [
+        "checkRateLimit (src/lib/rate-limit.ts:13) is exported but has no callers — sign-in and document upload are unthrottled, and the limiter's own comment notes it only bounds one warm container.",
+        "The credential authorize path runs a bcrypt compare with no rate limit or lockout on the POST /api/auth/callback/credentials endpoint.",
+        "Email is fire-and-forget inside the request: a Resend outage marks the EmailLog FAILED but does not roll back the payroll or leave write that triggered it.",
+        "No background jobs, cron or webhook receivers exist, so month-close, payroll runs and reminders are all operator-initiated."
+      ]
+    }
+  ]
+}

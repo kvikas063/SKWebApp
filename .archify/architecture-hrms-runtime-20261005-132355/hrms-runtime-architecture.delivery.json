@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "cdcefd5d-fa85-4524-93d5-2ab1cfd184fe",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/vikaskumar/Desktop/Samples/SKWebApp-GitRepo/.archify/architecture-hrms-runtime-20261005-132355/candidate.json",
+  "output": "/Users/vikaskumar/Desktop/Samples/SKWebApp-GitRepo/.archify/architecture-hrms-runtime-20261005-132355/hrms-runtime-architecture.html",
+  "specification": {
+    "sha256": "2bdd7b30c542b33eb7114c4e33bd52131382c295321d380a985acc7a28075632",
+    "bytes": 11004
+  },
+  "artifact": {
+    "sha256": "e393b788213a5ba1cf66949f3db269f26b0b7cc996f231e72d1cbaae4e42bbb3",
+    "bytes": 774294
+  }
+}

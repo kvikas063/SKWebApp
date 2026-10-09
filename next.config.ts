@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // lucide-react is imported icon-by-icon across many components.
-  // Bundling the whole package per import blows up the client bundle; this
-  // tells Next to trace and emit only the used icons.
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
@@ -18,10 +15,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Security headers applied to every route. CSP is permissive by
-        // default (no inline scripts blocked) so existing inline styles and
-        // Next.js client chunks keep working; tighten later if you add a
-        // nonce/hashes policy.
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
@@ -47,7 +40,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Never cache authenticated or mutating responses.
         source: "/api/(.*)",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },

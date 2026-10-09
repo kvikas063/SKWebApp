@@ -1,0 +1,326 @@
+import { type PagingQuery } from "../lib/pagination.js";
+export interface EmployeeListRow {
+    id: string;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    department: string | null;
+    designation: string | null;
+    employeeType: string;
+    userId: string | null;
+    userName: string;
+    userEmail: string;
+    userRole: string;
+    createdAt: Date;
+}
+export interface EmployeeListSummary {
+    totalEmployees: number;
+    totalDepartments: number;
+    totalGrossPaise: number;
+    departmentCounts: Record<string, number>;
+}
+export interface PaginatedEmployees {
+    data: EmployeeListRow[];
+    total: number;
+    page: number;
+    limit: number;
+    offset: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+    summary: EmployeeListSummary;
+    departmentCounts: Record<string, number>;
+    filters: {
+        search?: string;
+        department?: string;
+    };
+}
+export declare function listEmployees(params: PagingQuery): Promise<PaginatedEmployees>;
+export declare function getEmployeeById(id: string): Promise<({
+    user: {
+        name: string;
+        email: string;
+        phone: string | null;
+        role: import("@prisma/client").$Enums.UserRole;
+    } | null;
+    salaryComponents: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        isActive: boolean;
+        type: import("@prisma/client").$Enums.SalaryComponentType;
+        employeeId: string;
+        amountPaise: number;
+        sortOrder: number;
+    }[];
+    leaveBalances: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        leaveType: import("@prisma/client").$Enums.LeaveType;
+        year: number;
+        employeeId: string;
+        entitled: number;
+        carriedOver: number;
+        used: number;
+    }[];
+    documents: {
+        id: string;
+        type: import("@prisma/client").$Enums.DocumentType;
+        employeeId: string;
+        fileName: string;
+        filePath: string;
+        mimeType: string | null;
+        fileSize: number | null;
+        uploadedAt: Date;
+    }[];
+} & {
+    id: string;
+    address: string | null;
+    pan: string | null;
+    esiNumber: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    companyId: string;
+    userId: string | null;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    dateOfBirth: Date | null;
+    dateOfJoining: Date;
+    dateOfLeaving: Date | null;
+    employeeType: import("@prisma/client").$Enums.EmployeeType;
+    taxRegime: import("@prisma/client").$Enums.TaxRegime;
+    designation: string | null;
+    department: string | null;
+    managerId: string | null;
+    profilePhoto: string | null;
+    bankName: string | null;
+    bankAccountNo: string | null;
+    bankIfsc: string | null;
+    aadhaar: string | null;
+    uan: string | null;
+    isActive: boolean;
+}) | null>;
+export declare function getEmployeeByCode(code: string): Promise<({
+    user: {
+        name: string;
+        email: string;
+        phone: string | null;
+        role: import("@prisma/client").$Enums.UserRole;
+    } | null;
+    salaryComponents: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        isActive: boolean;
+        type: import("@prisma/client").$Enums.SalaryComponentType;
+        employeeId: string;
+        amountPaise: number;
+        sortOrder: number;
+    }[];
+    leaveBalances: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        leaveType: import("@prisma/client").$Enums.LeaveType;
+        year: number;
+        employeeId: string;
+        entitled: number;
+        carriedOver: number;
+        used: number;
+    }[];
+    documents: {
+        id: string;
+        type: import("@prisma/client").$Enums.DocumentType;
+        employeeId: string;
+        fileName: string;
+        filePath: string;
+        mimeType: string | null;
+        fileSize: number | null;
+        uploadedAt: Date;
+    }[];
+} & {
+    id: string;
+    address: string | null;
+    pan: string | null;
+    esiNumber: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    companyId: string;
+    userId: string | null;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    dateOfBirth: Date | null;
+    dateOfJoining: Date;
+    dateOfLeaving: Date | null;
+    employeeType: import("@prisma/client").$Enums.EmployeeType;
+    taxRegime: import("@prisma/client").$Enums.TaxRegime;
+    designation: string | null;
+    department: string | null;
+    managerId: string | null;
+    profilePhoto: string | null;
+    bankName: string | null;
+    bankAccountNo: string | null;
+    bankIfsc: string | null;
+    aadhaar: string | null;
+    uan: string | null;
+    isActive: boolean;
+}) | null>;
+export declare function createEmployee(data: {
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    department: string;
+    designation: string;
+    employeeType: "REGULAR" | "PROBATION" | "CONTRACT";
+    taxRegime: "OLD" | "NEW";
+    dateOfJoining: Date;
+    dateOfBirth?: Date;
+    phone?: string;
+    bankAccount?: string;
+    ifscCode?: string;
+    panNumber?: string;
+    aadharNumber?: string;
+    uanNumber?: string;
+    esiNumber?: string;
+    salaryComponents: {
+        name: string;
+        type: "EARNING" | "DEDUCTION";
+        amount: number;
+    }[];
+}): Promise<{
+    user: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
+        phone: string | null;
+        dateOfBirth: Date | null;
+        isActive: boolean;
+        passwordHash: string;
+        role: import("@prisma/client").$Enums.UserRole;
+    } | null;
+    salaryComponents: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        isActive: boolean;
+        type: import("@prisma/client").$Enums.SalaryComponentType;
+        employeeId: string;
+        amountPaise: number;
+        sortOrder: number;
+    }[];
+} & {
+    id: string;
+    address: string | null;
+    pan: string | null;
+    esiNumber: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    companyId: string;
+    userId: string | null;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    dateOfBirth: Date | null;
+    dateOfJoining: Date;
+    dateOfLeaving: Date | null;
+    employeeType: import("@prisma/client").$Enums.EmployeeType;
+    taxRegime: import("@prisma/client").$Enums.TaxRegime;
+    designation: string | null;
+    department: string | null;
+    managerId: string | null;
+    profilePhoto: string | null;
+    bankName: string | null;
+    bankAccountNo: string | null;
+    bankIfsc: string | null;
+    aadhaar: string | null;
+    uan: string | null;
+    isActive: boolean;
+}>;
+export declare function updateEmployee(id: string, data: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    department: string;
+    designation: string;
+    employeeType: "REGULAR" | "PROBATION" | "CONTRACT";
+    taxRegime: "OLD" | "NEW";
+    dateOfBirth: Date;
+    phone: string;
+    bankAccount: string;
+    ifscCode: string;
+    panNumber: string;
+    aadharNumber: string;
+    uanNumber: string;
+    esiNumber: string;
+}>): Promise<{
+    user: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
+        phone: string | null;
+        dateOfBirth: Date | null;
+        isActive: boolean;
+        passwordHash: string;
+        role: import("@prisma/client").$Enums.UserRole;
+    } | null;
+    salaryComponents: {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        isActive: boolean;
+        type: import("@prisma/client").$Enums.SalaryComponentType;
+        employeeId: string;
+        amountPaise: number;
+        sortOrder: number;
+    }[];
+} & {
+    id: string;
+    address: string | null;
+    pan: string | null;
+    esiNumber: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    companyId: string;
+    userId: string | null;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    dateOfBirth: Date | null;
+    dateOfJoining: Date;
+    dateOfLeaving: Date | null;
+    employeeType: import("@prisma/client").$Enums.EmployeeType;
+    taxRegime: import("@prisma/client").$Enums.TaxRegime;
+    designation: string | null;
+    department: string | null;
+    managerId: string | null;
+    profilePhoto: string | null;
+    bankName: string | null;
+    bankAccountNo: string | null;
+    bankIfsc: string | null;
+    aadhaar: string | null;
+    uan: string | null;
+    isActive: boolean;
+}>;
+export declare function deleteEmployee(id: string): Promise<void>;
+//# sourceMappingURL=employees.d.ts.map
