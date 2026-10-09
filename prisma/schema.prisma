@@ -557,7 +557,7 @@ model EmailLog {
   subject     String
   template    EmailTemplateKey
   status      EmailStatus @default(QUEUED)
-  providerId  String?     // Resend message ID
+  providerId  String?     // EmailJS message ID
   error       String?
   sentAt      DateTime?
   createdAt   DateTime    @default(now())

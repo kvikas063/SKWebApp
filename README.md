@@ -24,7 +24,7 @@ Built as a Next.js 16 full-stack app on PostgreSQL.
 | **Database** | PostgreSQL 16 |
 | **ORM** | Prisma 7 via `@prisma/adapter-pg` — connection URL lives in `prisma.config.ts`, not `schema.prisma` |
 | **Auth** | NextAuth v5 (Credentials), bcryptjs, custom RBAC (`ADMIN` / `MANAGER` / `EMPLOYEE`) |
-| **Email** | Resend (transactional, queued + logged) |
+| **Email** | EmailJS (transactional, queued + logged) |
 | **File storage** | Vercel Blob (prod) with local disk fallback (dev) |
 | **PDF** | `@react-pdf/renderer` (payslips, project reports) |
 | **Lint / Test** | ESLint 9 (`eslint-config-next`), Vitest 3 |
@@ -45,7 +45,7 @@ docker compose up -d
 cp .env.example .env
 ```
 
-The defaults in `.env.example` match `docker-compose.yml`, so no edits are needed for local dev. Required for a real deployment: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `RESEND_API_KEY`, and `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`).
+The defaults in `.env.example` match `docker-compose.yml`, so no edits are needed for local dev. Required for a real deployment: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`).
 
 ### 3. Install, migrate & seed
 
@@ -289,6 +289,6 @@ Vitest 3, Node environment. Run with `npm test`; lint with `npm run lint`.
 
 - **Vercel** (primary) — `vercel.json` configures the build and output directory.
 - **Self-hosted / PaaS** — `Procfile` defines `web: npm start`.
-- **Required env vars** — `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `RESEND_API_KEY`, `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`).
+- **Required env vars** — `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, `BLOB_READ_WRITE_TOKEN` (or `UPLOAD_DIR`).
 
 On Vercel the local-disk upload fallback is intentionally disabled: the runtime filesystem is ephemeral and read-only, so document uploads require `BLOB_READ_WRITE_TOKEN`. See [docs/security.md](docs/security.md) for the full hardening checklist.

@@ -12,11 +12,14 @@ export async function sendSupportEmail(formData: FormData) {
     return { ok: false as const, error: "All fields are required." };
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "HRMS <noreply@yourdomain.com>";
-  const supportTo = "support@hrms-suite.com";
+  const serviceId = process.env.EMAILJS_SERVICE_ID;
+  const templateId = process.env.EMAILJS_TEMPLATE_ID;
+  const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+  const fromEmail = process.env.EMAIL_FROM_EMAIL || "noreply@yourdomain.com";
+  const fromName = process.env.EMAIL_FROM_NAME || "HRMS";
+  const supportTo = process.env.SUPPORT_EMAIL || "support@hrms-suite.com";
 
-  if (!apiKey) {
+  if (!serviceId || !templateId || !publicKey) {
     return { ok: false as const, error: "Email service is not configured." };
   }
 
@@ -35,23 +38,34 @@ export async function sendSupportEmail(formData: FormData) {
     </div>
   `;
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Origin: "https://dashboard.emailjs.com",
+      Referer: "https://dashboard.emailjs.com/",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      "X-Requested-With": "XMLHttpRequest",
     },
     body: JSON.stringify({
-      from: fromEmail,
-      to: supportTo,
-      replyTo: email,
-      subject: `[HRMS Support] ${subject}`,
-      html,
+      service_id: serviceId,
+      template_id: templateId,
+      user_id: publicKey,
+      template_params: {
+        to_email: supportTo,
+        from_email: fromEmail,
+        from_name: fromName,
+        reply_to: email,
+        subject: `[HRMS Support] ${subject}`,
+        html,
+      },
     }),
   });
 
   if (!res.ok) {
-    return { ok: false as const, error: `Failed to send email: ${res.status}` };
+    const text = await res.text();
+    return { ok: false as const, error: `Failed to send email: ${res.status} ${text}` };
   }
 
   revalidatePath("/support");

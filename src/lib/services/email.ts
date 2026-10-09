@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import type { EmailTemplateKey } from "@prisma/client";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "HRMS <noreply@yourdomain.com>";
+const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY;
+const FROM_EMAIL = process.env.EMAIL_FROM_EMAIL || "noreply@yourdomain.com";
+const FROM_NAME = process.env.EMAIL_FROM_NAME || "HRMS";
 
 export type EmailVariable = string | number | null | undefined;
 
@@ -157,28 +160,38 @@ function stripConditionals(tpl: string, vars: Record<string, EmailVariable>): st
   });
 }
 
-async function sendViaResend(payload: { to: string; subject: string; html: string }): Promise<{ ok: boolean; providerId?: string; error?: string }> {
-  if (!RESEND_API_KEY) {
-    console.warn("[email] RESEND_API_KEY not set, skipping send");
-    return { ok: false, error: "RESEND_API_KEY not configured" };
+async function sendViaEmailJS(payload: { to: string; subject: string; html: string }): Promise<{ ok: boolean; providerId?: string; error?: string }> {
+  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+    console.warn("[email] EMAILJS_* env vars not set, skipping send");
+    return { ok: false, error: "EmailJS not configured" };
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Origin: "https://dashboard.emailjs.com",
+        Referer: "https://dashboard.emailjs.com/",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: payload.to,
-        subject: payload.subject,
-        html: payload.html,
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email: payload.to,
+          from_email: FROM_EMAIL,
+          from_name: FROM_NAME,
+          subject: payload.subject,
+          html: payload.html,
+        },
       }),
     });
     if (!res.ok) {
       const text = await res.text();
-      return { ok: false, error: `Resend ${res.status}: ${text}` };
+      return { ok: false, error: `EmailJS ${res.status}: ${text}` };
     }
     const data = (await res.json()) as { id?: string };
     return { ok: true, providerId: data.id };
@@ -225,7 +238,7 @@ export async function sendEmail(args: {
     },
   });
 
-  const result = await sendViaResend({ to: args.to, subject, html });
+  const result = await sendViaEmailJS({ to: args.to, subject, html });
 
   await prisma.emailLog.update({
     where: { id: log.id },
@@ -247,7 +260,7 @@ export async function retryFailedEmail(logId: string): Promise<{ ok: boolean }> 
   const tpl = await prisma.emailTemplate.findUnique({ where: { key: log.template } });
   const html = tpl ? renderTemplate(tpl.bodyHtml, {}) : "<p>" + log.subject + "</p>";
 
-  const result = await sendViaResend({ to: log.to, subject: log.subject, html });
+  const result = await sendViaEmailJS({ to: log.to, subject: log.subject, html });
   await prisma.emailLog.update({
     where: { id: logId },
     data: {
